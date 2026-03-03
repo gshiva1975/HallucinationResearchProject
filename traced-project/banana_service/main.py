@@ -16,6 +16,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from banana_service.config import settings
 from banana_service.ingestion.mcp_client import MCPClient
+from banana_service.agents.analyst import AnalystAgent
+from banana_service.agents.reflection import ReflectionAgent
+from banana_service.agents.scribe import ScribeAgent
 from logger import setup_logger, trace_step
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -29,6 +32,9 @@ log_store   = setup_logger("Store")
 log_retr    = setup_logger("Retrieve")
 log_eval    = setup_logger("Evaluate")
 log_answer  = setup_logger("Answer")
+log_analyst = setup_logger("Analyst")
+log_reflect = setup_logger("Reflection")
+log_scribe  = setup_logger("Scribe")
 log_graph   = setup_logger("Graph")
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -51,6 +57,7 @@ async def log_requests(request: Request, call_next):
 # ─────────────────────────────────────────────────────────────────────────────
 PERSIST_DIR          = "./db"
 SIMILARITY_THRESHOLD = 0.55
+CONFIDENCE_THRESHOLD = 0.70
 
 ENTITY_REGISTRY = {
     "AAPL": "APPLE",
@@ -96,6 +103,10 @@ class AgentState(TypedDict):
     fetched_data:   Dict[str, str]
     retrieved_docs: List[str]
     answer:         str
+    threshold:      float
+    sentiment:      Optional[Dict]
+    proceed:        Optional[bool]
+    report:         Optional[str]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Utility
@@ -116,6 +127,15 @@ def extract_ticker(query: str) -> Optional[str]:
 
 ADVISORY_KEYWORDS = ["good investment","overvalued","undervalued",
                      "should i","buy","sell","predict","future"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Agent instances
+# ─────────────────────────────────────────────────────────────────────────────
+log_api.info("Initialising AnalystAgent (loading FinBERT)…")
+_analyst_agent   = AnalystAgent()
+_reflection_agent = ReflectionAgent()
+_scribe_agent     = ScribeAgent()
+log_api.info("AnalystAgent / ReflectionAgent / ScribeAgent ready ✓")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Graph nodes
@@ -302,28 +322,76 @@ def answer_node(state: AgentState) -> AgentState:
                         f"length={len(state['answer'])} chars")
     return state
 
+def analyst_node(state: AgentState) -> AgentState:
+    with trace_step(log_analyst, "analyst_node"):
+        if state.get("answer") == "INSUFFICIENT_EVIDENCE":
+            log_analyst.info("  Skipping — query blocked upstream")
+            state["proceed"] = False
+            return state
+        state = _analyst_agent.run(state)
+        log_analyst.info(
+            f"  Sentiment={state['sentiment']['label']}  "
+            f"confidence={state['sentiment']['confidence']:.4f}"
+        )
+    return state
+
+
+def reflection_node(state: AgentState) -> AgentState:
+    with trace_step(log_reflect, "reflection_node"):
+        if state.get("answer") == "INSUFFICIENT_EVIDENCE":
+            log_reflect.info("  Skipping — query blocked upstream")
+            state["proceed"] = False
+            return state
+        state = _reflection_agent.run(state)
+        log_reflect.info(f"  proceed={state['proceed']}")
+    return state
+
+
+def scribe_node(state: AgentState) -> AgentState:
+    with trace_step(log_scribe, "scribe_node"):
+        state = _scribe_agent.run(state)
+        log_scribe.info(f"  Report generated  length={len(state.get('report', ''))} chars")
+    return state
+
+
+def _route_after_reflection(state: AgentState) -> str:
+    """Conditional edge: proceed to scribe only if confidence threshold passed."""
+    if state.get("proceed"):
+        log_reflect.info("  Routing → scribe")
+        return "scribe"
+    log_reflect.info("  Routing → __end__ (low confidence)")
+    return "__end__"
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Build LangGraph
 # ─────────────────────────────────────────────────────────────────────────────
 log_graph.info("Building LangGraph StateGraph…")
 workflow = StateGraph(AgentState)
 
-for name, fn in [("intent",   intent_node),
-                 ("fetch",    fetch_node),
-                 ("validate", validate_node),
-                 ("store",    store_node),
-                 ("retrieve", retrieve_node),
-                 ("evaluate", evaluate_node),
-                 ("answer",   answer_node)]:
+for name, fn in [("intent",     intent_node),
+                 ("fetch",      fetch_node),
+                 ("validate",   validate_node),
+                 ("store",      store_node),
+                 ("retrieve",   retrieve_node),
+                 ("evaluate",   evaluate_node),
+                 ("answer",     answer_node),
+                 ("analyst",    analyst_node),
+                 ("reflection", reflection_node),
+                 ("scribe",     scribe_node)]:
     workflow.add_node(name, fn)
     log_graph.info(f"  Node registered: {name}")
 
 workflow.set_entry_point("intent")
 for a, b in [("intent","fetch"),("fetch","validate"),("validate","store"),
              ("store","retrieve"),("retrieve","evaluate"),("evaluate","answer"),
-             ("answer", END)]:
+             ("answer","analyst"),("analyst","reflection"),
+             ("scribe", END)]:
     workflow.add_edge(a, b)
     log_graph.info(f"  Edge: {a} → {b}")
+
+workflow.add_conditional_edges("reflection", _route_after_reflection, {"scribe": "scribe", "__end__": END})
+log_graph.info("  Conditional edge: reflection → (scribe | __end__)")
 
 agent = workflow.compile()
 log_graph.info("LangGraph compiled ✓")
@@ -347,6 +415,10 @@ def analyze(request: QueryRequest):
             "fetched_data":   {},
             "retrieved_docs": [],
             "answer":         "",
+            "threshold":      CONFIDENCE_THRESHOLD,
+            "sentiment":      None,
+            "proceed":        None,
+            "report":         None,
         })
 
     grounded = result["answer"] != "INSUFFICIENT_EVIDENCE"
@@ -357,8 +429,14 @@ def analyze(request: QueryRequest):
         "faithfulness_score": 1.0 if grounded else None,
         "block_reason":       result.get("block_reason"),
         "tools_used":         list(result.get("fetched_data", {}).keys()),
+        "sentiment":          result.get("sentiment"),
+        "report":             result.get("report"),
     }
-    log_api.info(f"Response  grounded={grounded}  "
-                 f"block={result.get('block_reason')}  "
-                 f"tools={response['tools_used']}")
+    log_api.info(
+        f"Response  grounded={grounded}  "
+        f"block={result.get('block_reason')}  "
+        f"tools={response['tools_used']}  "
+        f"sentiment={result.get('sentiment')}  "
+        f"proceed={result.get('proceed')}"
+    )
     return response

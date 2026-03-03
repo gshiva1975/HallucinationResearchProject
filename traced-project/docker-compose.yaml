@@ -1,0 +1,86 @@
+# ============================================================
+# docker-compose.yml — Banana local dev stack
+# ============================================================
+# Usage:
+#   export ALPHA_VANTAGE_API_KEY=your_key_here
+#   docker-compose up --build
+#
+# API will be available at: http://localhost:8000/analyze
+# ============================================================
+
+services:
+
+  # ── MCP: Market data (Alpha Vantage) ──────────────────────
+  banana-market:
+    build:
+      context: .
+      dockerfile: mcp_servers/Dockerfile.market
+    ports:
+      - "8003:8003"
+    environment:
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # ── MCP: SEC filings (public SEC API) ─────────────────────
+  banana-sec:
+    build:
+      context: .
+      dockerfile: mcp_servers/Dockerfile.sec
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # ── MCP: Social sentiment (placeholder) ───────────────────
+  # NOTE: social container also runs on port 8003 internally.
+  # It is mapped to host port 8002 to avoid conflict with
+  # banana-market on the host. Inside the Docker network each
+  # service is reachable by name, so banana-api still connects
+  # to banana-social:8003 correctly.
+  banana-social:
+    build:
+      context: .
+      dockerfile: mcp_servers/Dockerfile.social
+    ports:
+      - "8002:8003"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # ── Main API (FastAPI + LangGraph + FinBERT) ───────────────
+  banana-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - EXPERIMENT_MODE=OPTIMIZED
+      - MCP_MARKET_URL=http://banana-market:8003/mcp
+      - MCP_SEC_URL=http://banana-sec:8001/mcp
+      - MCP_SOCIAL_URL=http://banana-social:8003/mcp
+    depends_on:
+      banana-market:
+        condition: service_healthy
+      banana-sec:
+        condition: service_healthy
+      banana-social:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

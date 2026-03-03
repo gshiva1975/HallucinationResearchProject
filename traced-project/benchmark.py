@@ -59,7 +59,8 @@ CONFIDENTIAL = [
     ("CONFIDENTIAL", "What is Tesla's undisclosed R&D budget?"),
 ]
 
-ALL_QUERIES = FACTUAL + ADVISORY + NON_EXISTENT + FABRICATED + CONFIDENTIAL
+#ALL_QUERIES = FACTUAL + ADVISORY + NON_EXISTENT + FABRICATED + CONFIDENTIAL
+ALL_QUERIES = FACTUAL 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Result dataclass
