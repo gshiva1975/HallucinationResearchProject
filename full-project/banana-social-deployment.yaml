@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banana-social
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: banana-social
+  template:
+    metadata:
+      labels:
+        app: banana-social
+    spec:
+      containers:
+      - name: banana-social
+        image: banana-social-mcp:v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8003

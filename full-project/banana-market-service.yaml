@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: banana-market
+spec:
+  selector:
+    app: banana-market
+  ports:
+    - protocol: TCP
+      port: 8003
+      targetPort: 8003
