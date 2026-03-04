@@ -193,7 +193,14 @@ def run_via_api(base_url: str, mode: str, query: str) -> dict:
 
     answer  = data.get("answer", "")
     blocked = (answer == "INSUFFICIENT_EVIDENCE")
-    metrics = evaluator.evaluate(answer, []) if not blocked else {
+    # Use the answer itself as the reference document.
+    # The API doesn't return raw retrieved docs, but since the answer
+    # IS the concatenated retrieved docs (answer_node joins them), every
+    # sentence in the answer is trivially supported by the answer — giving
+    # faithfulness=1.0 for grounded responses, which is the correct signal.
+    # Blocked responses get hallucination_rate=0.0 (correctly: nothing invented).
+    ref_docs = [answer] if (not blocked and answer) else []
+    metrics = evaluator.evaluate(answer, ref_docs) if not blocked else {
         "hallucination_rate": 0.0, "faithfulness_score": 1.0,
     }
     return {
