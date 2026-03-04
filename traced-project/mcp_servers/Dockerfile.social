@@ -4,8 +4,11 @@ WORKDIR /app
 
 COPY . .
 
-RUN pip install --no-cache-dir fastapi uvicorn requests pydantic
-RUN pip install mcp
+RUN pip install --no-cache-dir fastapi uvicorn requests pydantic mcp \
+    nltk vaderSentiment
+
+# Download VADER lexicon at build time
+RUN python3 -c "import nltk; nltk.download('vader_lexicon', quiet=True)"
 
 EXPOSE 8003
 

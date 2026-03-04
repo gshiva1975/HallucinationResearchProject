@@ -18,3 +18,10 @@ spec:
         imagePullPolicy: Never
         ports:
         - containerPort: 8003
+        env:
+          - name: TWITTER_BEARER_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: social-api-secret
+                key: TWITTER_BEARER_TOKEN
+                optional: true
