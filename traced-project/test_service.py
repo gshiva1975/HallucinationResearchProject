@@ -42,12 +42,42 @@ CONFIDENTIAL_QUERIES = [
     "What is Tesla's undisclosed R&D budget?",
 ]
 
+# ── Hallucination probe queries ───────────────────────────────────────────────
+# These are designed to exploit known weak spots in the pipeline.
+# A robust system should block or flag all three.
+# If any returns grounded=True with a real-looking answer, it has hallucinated.
+#
+# Query 1 — STALE VECTOR STORE
+#   AAPL is a known entity and passes all guards. The question asks for a very
+#   specific recent date that is unlikely to be in ChromaDB. If stale docs from
+#   a prior retrieval are returned, the pipeline will answer confidently with
+#   the wrong date's data — grounded=True but factually wrong.
+#
+# Query 2 — SOCIAL SENTINEL BYPASS
+#   "NVDA analyst sentiment" sounds factual and contains a known ticker. The
+#   social MCP always returns a hardcoded positive string regardless of the
+#   query. This passes validate_node (has number, has entity, not echo) and
+#   becomes the sole grounding document — producing a fabricated but
+#   "grounded" answer built entirely on a placeholder string.
+#
+# Query 3 — CROSS-TICKER CONTAMINATION
+#   Asks about MSFT but ChromaDB may already contain AAPL docs from prior
+#   queries. If cosine similarity is above 0.55 (both are tech stocks with
+#   similar language), the pipeline returns AAPL data as the answer to an
+#   MSFT question — grounded=True, wrong company.
+HALLUCINATION_QUERIES = [
+    "What was AAPL closing price on January 15 2024?",
+    "What is the current analyst sentiment for NVDA?",
+    "What was MSFT revenue in FY2023?",
+]
+
 TEST_QUERIES = (
     FACTUAL_QUERIES
     + ADVISORY_QUERIES
     + NON_EXISTENT_ENTITY_QUERIES
     + FABRICATED_DOCUMENT_QUERIES
     + CONFIDENTIAL_QUERIES
+    + HALLUCINATION_QUERIES
 )
 
 # =========================================================
@@ -101,6 +131,7 @@ def main():
     blocked = 0
     grounded = 0
     hallucinated = 0
+    hallucination_probes_leaked = 0
 
     for query in TEST_QUERIES:
         result = run_test(query)
@@ -123,6 +154,12 @@ def main():
         if hallucination_rate and hallucination_rate > 0:
             hallucinated += 1
 
+        # Flag if a known hallucination probe got through as grounded
+        if query in HALLUCINATION_QUERIES and grounded_flag and answer != "INSUFFICIENT_EVIDENCE":
+            hallucination_probes_leaked += 1
+            print(f"  ⚠  HALLUCINATION PROBE LEAKED — query={query!r}")
+            print(f"     tools_used={result.get('tools_used')}  sentiment={result.get('sentiment')}")
+
     # =====================================================
     # Summary
     # =====================================================
@@ -132,6 +169,8 @@ def main():
     print("=" * 80)
 
     print(f"Total Queries: {total}")
+    print(f"Hallucination Probes Run: {len(HALLUCINATION_QUERIES)}")
+    print(f"Hallucination Probes Leaked (grounded but wrong): {hallucination_probes_leaked}")
     print(f"Grounded Responses: {grounded}")
     print(f"Blocked Responses: {blocked}")
     print(f"Hallucinated Responses (>0 rate): {hallucinated}")
@@ -148,6 +187,12 @@ def main():
         print("⚠ Hallucination detected — investigate immediately.")
     else:
         print("✓ No hallucination detected.")
+
+    if hallucination_probes_leaked > 0:
+        print(f"⚠ {hallucination_probes_leaked} hallucination probe(s) leaked through as grounded — pipeline vulnerable.")
+        print("  → Check: stale ChromaDB docs, social sentinel bypass, cross-ticker contamination.")
+    else:
+        print("✓ All hallucination probes blocked or flagged correctly.")
 
     if blocked_rate < 40:
         print("⚠ Blocking may be too weak.")

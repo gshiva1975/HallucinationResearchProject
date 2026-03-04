@@ -7,6 +7,7 @@ mcp = BaseMCP()
 
 # https://www.alphavantage.co/support/#api-key
 #ALPHA_VANTAGE_API_KEY = "N3LC8ZP2KA0DOEFX"
+ALPHA_VANTAGE_API_KEY = "X2CR6V54NDJI8PLH "
 
 import os
 

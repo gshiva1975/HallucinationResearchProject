@@ -137,7 +137,7 @@ kubectl rollout status deployment/banana-api --timeout=300s \
 # ── 7. Show status ───────────────────────────────────────────
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo -e "${GREEN}✅ Deployment complete!${NC}"
+echo -e "${GREEN} Deployment complete!${NC}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 kubectl get pods -o wide
 echo ""

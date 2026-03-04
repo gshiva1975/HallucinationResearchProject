@@ -1,36 +1,41 @@
+
+import faiss
 import numpy as np
-import logging
+from logger import setup_logger
 
-logger = logging.getLogger("VectorStore")
-
+logger = setup_logger("VectorStore")
 
 class VectorStore:
-
     def __init__(self, dim=384):
-        self.dim  = dim
-        self.vecs = []
+        self.index = faiss.IndexFlatL2(dim)
         self.docs = []
 
     def add(self, vectors, docs):
-        logger.info(f"Adding {len(docs)} docs to VectorStore")
-        for v, d in zip(vectors, docs):
-            self.vecs.append(np.array(v, dtype="float32"))
-            self.docs.append(d)
+        logger.info(f"Adding {len(docs)} docs to FAISS")
+        self.index.add(np.array(vectors).astype("float32"))
+        self.docs.extend(docs)
+
+    def search1(self, query_vec, k=3):
+        logger.info("Running RAG retrieval")
+        D, I = self.index.search(
+            np.array([query_vec]).astype("float32"), k
+        )
+        return [self.docs[i] for i in I[0]]
 
     def search(self, query_vec, k=3):
-        logger.info("Running similarity search")
-
-        if not self.vecs:
+        logger.info("Running RAG retrieval")
+    
+        if len(self.docs) == 0:
             logger.warning("VectorStore empty — no docs to retrieve")
             return []
-
-        q = np.array(query_vec, dtype="float32")
-        matrix  = np.stack(self.vecs)
-        q_norm  = q / (np.linalg.norm(q) + 1e-10)
-        m_norms = np.linalg.norm(matrix, axis=1, keepdims=True) + 1e-10
-        sims    = matrix / m_norms @ q_norm
-
-        top_k = min(k, len(self.docs))
-        top_indices = np.argsort(sims)[::-1][:top_k]
-
-        return [self.docs[i] for i in top_indices]
+    
+        D, I = self.index.search(
+            np.array([query_vec]).astype("float32"), k
+        )
+    
+        results = []
+        for i in I[0]:
+            if 0 <= i < len(self.docs):
+                results.append(self.docs[i])
+    
+        return results

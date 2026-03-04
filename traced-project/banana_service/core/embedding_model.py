@@ -1,26 +1,18 @@
-# banana_service/core/embedding_model.py
-import time
-import torch
+
 from transformers import AutoTokenizer, AutoModel
+import torch
 from logger import setup_logger
 
-logger = setup_logger("EmbeddingModel")
-
+logger = setup_logger("Embedding")
 
 class EmbeddingModel:
-
-    def __init__(self, name: str = "sentence-transformers/all-MiniLM-L6-v2"):
-        logger.info(f"Loading embedding model: {name}")
+    def __init__(self, name="sentence-transformers/all-MiniLM-L6-v2"):
         self.tokenizer = AutoTokenizer.from_pretrained(name)
-        self.model     = AutoModel.from_pretrained(name)
-        logger.info("Embedding model ready ✓")
+        self.model = AutoModel.from_pretrained(name)
 
-    def encode(self, text: str):
-        t0     = time.perf_counter()
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=128)
+    def encode(self, text):
+        logger.info("Encoding query")
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True)
         with torch.no_grad():
             outputs = self.model(**inputs)
-        vec     = outputs.last_hidden_state.mean(dim=1)[0].numpy()
-        elapsed = round(time.perf_counter() - t0, 4)
-        logger.debug(f"encode()  elapsed={elapsed}s  text={text[:60]!r}")
-        return vec
+        return outputs.last_hidden_state.mean(dim=1)[0].numpy()
