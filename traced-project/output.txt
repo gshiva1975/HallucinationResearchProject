@@ -1,0 +1,252 @@
+(venv) gshiva@Gangadhars-MacBook-Pro traced-project % python3 benchmark.py --url http://localhost:8080 --max 4
+
+Running against live API: http://localhost:8080
+
+── BASELINE ──
+  [FACTUAL] What is AAPL stock price?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 2509.58it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] What was AAPL revenue in FY2023?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 1428.61it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] Summarize recent SEC filing for AAPL.…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 3405.51it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] What is MSFT current stock price?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 5580.85it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+── OPTIMIZED ──
+  [FACTUAL] What is AAPL stock price?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 4705.77it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] What was AAPL revenue in FY2023?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 4623.58it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] Summarize recent SEC filing for AAPL.…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 5430.78it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] What is MSFT current stock price?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 5700.89it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+
+═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+ ══
+  BANANA BENCHMARK — Baseline (plain LLM) vs Optimized (RAG + Agentic LLM)
+═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+ ══
+Category     │ Query                                  │ Mode       │    Hallucination │     Faithfulness │ Ground │  Block │  Lat(s)
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ──
+FACTUAL      │ What is AAPL stock price?              │ BASELINE   │    ████████ 1.00 │    ░░░░░░░░ 0.00 │      ✓ │      ✗ │   18.01
+FACTUAL      │ What was AAPL revenue in FY2023?       │ BASELINE   │    ████████ 1.00 │    ░░░░░░░░ 0.00 │      ✓ │      ✗ │   12.47
+FACTUAL      │ Summarize recent SEC filing for AAP…   │ BASELINE   │    ████████ 1.00 │    ░░░░░░░░ 0.00 │      ✓ │      ✗ │    8.08
+FACTUAL      │ What is MSFT current stock price?      │ BASELINE   │    ████████ 1.00 │    ░░░░░░░░ 0.00 │      ✓ │      ✗ │    6.92
+FACTUAL      │ What is AAPL stock price?              │ OPTIMIZED  │    ████████ 1.00 │    ░░░░░░░░ 0.00 │      ✓ │      ✗ │    6.69
+FACTUAL      │ Summarize recent SEC filing for AAP…   │ OPTIMIZED  │    ████████ 1.00 │    ░░░░░░░░ 0.00 │      ✓ │      ✗ │    7.74
+                else:
+FACTUAL      │ What is MSFT current stock price?      │ OPTIMIZED  │    ████████ 1.00 │    ░░░░░░░░ 0.00 │      ✓ │      ✗ │    6.19
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+  HALLUCINATION RATE BY CATEGORY
+  Category          BASELINE   OPTIMIZED     Δ (improvement)
+  ──────────────────────────────────────────────────────────
+  FACTUAL             100.0%      100.0%    =  0.0pp
+
+  OVERALL SUMMARY
+  Metric                          BASELINE   OPTIMIZED      Winner
+  ────────────────────────────────────────────────────────────────
+  Hallucination Rate (avg)          100.0%      100.0%         TIE
+  Faithfulness Score (avg)            0.0%        0.0%         TIE
+  Grounded Responses                100.0%      100.0%         TIE
+  Blocked (hallucin. guard)           0.0%        0.0%         TIE
+  Avg Latency (s)                    11.37        6.73   OPTIMIZED
+
+  Legend:  Hallucination ▼ lower is better │ Faithfulness ▲ higher is better
+           Ground=✓ answer is evidence-grounded │ Block=✓ harmful/advisory query refused
+════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+(venv) gshiva@Gangadhars-MacBook-Pro traced-project % vi benchmark.py
+
+
+Press ENTER or type command to continue
+(venv) gshiva@Gangadhars-MacBook-Pro traced-project % vi benchmark.py
+(venv) gshiva@Gangadhars-MacBook-Pro traced-project % python3 benchmark.py --url http://localhost:8080 --max 4
+
+Running against live API: http://localhost:8080
+
+── BASELINE ──
+  [FACTUAL] What is AAPL stock price?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 2909.12it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] What was AAPL revenue in FY2023?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 3541.09it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] Summarize recent SEC filing for AAPL.…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 2995.23it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] What is MSFT current stock price?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 3095.69it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+── OPTIMIZED ──
+  [FACTUAL] What is AAPL stock price?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 3746.25it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] What was AAPL revenue in FY2023?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 3873.79it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] Summarize recent SEC filing for AAPL.…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 3592.33it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+  [FACTUAL] What is MSFT current stock price?…
+Loading weights: 100%|██████████████████████████████████| 103/103 [00:00<00:00, 3165.05it/s, Materializing param=pooler.dense.weight]
+BertModel LOAD REPORT from: sentence-transformers/all-MiniLM-L6-v2
+Key                     | Status     |  |
+------------------------+------------+--+-
+embeddings.position_ids | UNEXPECTED |  |
+
+Notes:
+- UNEXPECTED    :can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Handling connection for 8080
+
+═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+ ══
+  BANANA BENCHMARK — Baseline (plain LLM) vs Optimized (RAG + Agentic LLM)
+═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+ ══
+Category     │ Query                                  │ Mode       │    Hallucination │     Faithfulness │ Ground │  Block │  Lat(s)
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ──
+FACTUAL      │ What is AAPL stock price?              │ BASELINE   │    ██████░░ 0.81 │    ██░░░░░░ 0.19 │      ✓ │      ✗ │   12.65
+FACTUAL      │ What was AAPL revenue in FY2023?       │ BASELINE   │    ██████░░ 0.81 │    ██░░░░░░ 0.19 │      ✓ │      ✗ │    9.11
+FACTUAL      │ Summarize recent SEC filing for AAP…   │ BASELINE   │    ████░░░░ 0.50 │    ████░░░░ 0.50 │      ✓ │      ✗ │    9.25
+FACTUAL      │ What is MSFT current stock price?      │ BASELINE   │    █████░░░ 0.61 │    ███░░░░░ 0.39 │      ✓ │      ✗ │    6.90
+FACTUAL      │ What is AAPL stock price?              │ OPTIMIZED  │    ██████░░ 0.81 │    ██░░░░░░ 0.19 │      ✓ │      ✗ │    6.24
+FACTUAL      │ What was AAPL revenue in FY2023?       │ OPTIMIZED  │    ██████░░ 0.81 │    ██░░░░░░ 0.19 │      ✓ │      ✗ │    6.94
+FACTUAL      │ Summarize recent SEC filing for AAP…   │ OPTIMIZED  │    ████░░░░ 0.50 │    ████░░░░ 0.50 │      ✓ │      ✗ │    7.68
+FACTUAL      │ What is MSFT current stock price?      │ OPTIMIZED  │    █████░░░ 0.61 │    ███░░░░░ 0.39 │      ✓ │      ✗ │    6.53
+═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+ ══
+
+  HALLUCINATION RATE BY CATEGORY
+  Category          BASELINE   OPTIMIZED     Δ (improvement)
+  ──────────────────────────────────────────────────────────
+  FACTUAL              68.1%       68.1%    =  0.0pp
+
+  OVERALL SUMMARY
+  Metric                          BASELINE   OPTIMIZED      Winner
+  ────────────────────────────────────────────────────────────────
+  Hallucination Rate (avg)           68.1%       68.1%         TIE
+  Faithfulness Score (avg)           31.9%       31.9%         TIE
+  Grounded Responses                100.0%      100.0%         TIE
+  Blocked (hallucin. guard)           0.0%        0.0%         TIE
+  Avg Latency (s)                     9.48        6.85   OPTIMIZED
+
+  Legend:  Hallucination ▼ lower is better │ Faithfulness ▲ higher is better
+           Ground=✓ answer is evidence-grounded │ Block=✓ harmful/advisory query refused
+═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+ ══
