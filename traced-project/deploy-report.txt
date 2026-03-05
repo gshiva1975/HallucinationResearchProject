@@ -1,0 +1,40 @@
+kubectl get pods
+NAME                             READY   STATUS    RESTARTS   AGE
+banana-api-59474696d5-dnzs4      1/1     Running   0          24h
+banana-market-6c5d8567c8-w9s9v   1/1     Running   0          2d4h
+banana-sec-f6c8b77cb-2f5dp       1/1     Running   0          2d4h
+banana-social-5d8f49b596-8rc6g   1/1     Running   0          5h52m
+
+---------------------------------------------------------------------------------
+kubectl get services
+
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+banana-api-service   NodePort    10.102.20.157    <none>        80:30080/TCP   5d20h
+banana-market        ClusterIP   10.105.114.47    <none>        8003/TCP       5d5h
+banana-sec           ClusterIP   10.96.132.70     <none>        8001/TCP       2d4h
+banana-social        ClusterIP   10.105.199.206   <none>        8003/TCP       5d7h
+kubernetes           ClusterIP   10.96.0.1        <none>        443/TCP        5d20h
+
+---------------------------------------------------------------------------------
+curl -s -X POST http://localhost:8080/analyze \
+     -H 'Content-Type: application/json' \
+     -d '{"query": "What is AAPL stock price?"}' | python3 -m json.tool >> ./deploy-report.txt
+Handling connection for 8080
+{
+    "answer": "AAPL (2026-03-03) \u2014 Open: $263.4800, High: $265.5600, Low: $260.1300, Close: $263.7500, Volume: 38568921\n\nAAPL (2026-03-03) \u2014 Open: $263.4800, High: $265.5600, Low: $260.1300, Close: $263.7500, Volume: 38568921\n\nAAPL (2026-03-03) \u2014 Open: $263.4800, High: $265.5600, Low: $260.1300, Close: $263.7500, Volume: 38568921\n\nAAPL (2026-03-03) \u2014 Open: $263.4800, High: $265.5600, Low: $260.1300, Close: $263.7500, Volume: 38020971\n\nAAPL (2026-03-03) \u2014 Open: $263.4800, High: $265.5600, Low: $260.1300, Close: $263.7500, Volume: 38020971",
+    "grounded": true,
+    "hallucination_rate": 0.0,
+    "faithfulness_score": 1.0,
+    "block_reason": null,
+    "tools_used": [
+        "market",
+        "sec",
+        "social"
+    ],
+    "sentiment": {
+        "label": "neutral",
+        "confidence": 0.9211257100105286
+    },
+    "report": "\nFinancial Report:\n\nSentiment: neutral\nConfidence: 0.9211257100105286\n"
+}
+---------------------------------------------------------------------------------
