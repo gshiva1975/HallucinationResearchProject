@@ -38,3 +38,20 @@ Handling connection for 8080
     "report": "\nFinancial Report:\n\nSentiment: neutral\nConfidence: 0.9211257100105286\n"
 }
 ---------------------------------------------------------------------------------
+{
+    "answer": "AAPL (2026-03-03) \u2014 Open: $263.4800, High: $265.5600, Low: $260.1300, Close: $263.7500, Volume: 38568921\n\nAAPL (2026-03-03) \u2014 Open: $263.4800, High: $265.5600, Low: $260.1300, Close: $263.7500, Volume: 38568921\n\nAAPL (2026-03-03) \u2014 Open: $263.4800, High: $265.5600, Low: $260.1300, Close: $263.7500, Volume: 38568921\n\nAAPL (2026-03-03) \u2014 Open: $263.4800, High: $265.5600, Low: $260.1300, Close: $263.7500, Volume: 38020971\n\nAAPL (2026-03-03) \u2014 Open: $263.4800, High: $265.5600, Low: $260.1300, Close: $263.7500, Volume: 38020971",
+    "grounded": true,
+    "hallucination_rate": 0.0,
+    "faithfulness_score": 1.0,
+    "block_reason": null,
+    "tools_used": [
+        "market",
+        "sec",
+        "social"
+    ],
+    "sentiment": {
+        "label": "neutral",
+        "confidence": 0.9211257100105286
+    },
+    "report": "\nFinancial Report:\n\nSentiment: neutral\nConfidence: 0.9211257100105286\n"
+}
