@@ -3,14 +3,7 @@ import time
 import uuid
 import json
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import numpy as np
-
 BASE_URL = "http://127.0.0.1:8080/analyze"
-#kubectl port-forward service/banana-api-service 8080:80
 
 # =========================================================
 # Query Categories
@@ -179,7 +172,7 @@ TEST_QUERIES = (
 # Test Runner
 # =========================================================
 
-def run_test(query, sentiment_only: bool = False):
+def run_test(query):
     request_id = str(uuid.uuid4())[:8]
 
     print("=" * 80)
@@ -188,14 +181,10 @@ def run_test(query, sentiment_only: bool = False):
 
     start = time.time()
 
-    payload = {"query": query}
-    if sentiment_only:
-        payload["sentiment_only"] = True
-
     try:
         response = requests.post(
             BASE_URL,
-            json=payload,
+            json={"query": query},
             timeout=15
         )
     except Exception as e:
@@ -220,182 +209,6 @@ def run_test(query, sentiment_only: bool = False):
     return data
 
 # =========================================================
-# Visualization  (defined BEFORE main so it is in scope)
-# =========================================================
-
-_BG     = "#F8F9FA"
-_GRID   = "#DEE2E6"
-_GREEN  = "#4CAF82"
-_AMBER  = "#F5A623"
-_RED    = "#E05252"
-_BLUE   = "#3A7EBF"
-_PURPLE = "#7B5EA7"
-
-
-def _style(fig, axes):
-    fig.patch.set_facecolor(_BG)
-    for ax in (axes if hasattr(axes, "__iter__") else [axes]):
-        ax.set_facecolor(_BG)
-        ax.spines[["top", "right"]].set_visible(False)
-        ax.spines[["left", "bottom"]].set_color(_GRID)
-        ax.yaxis.grid(True, color=_GRID, linewidth=0.8, linestyle="--")
-        ax.set_axisbelow(True)
-
-
-def visualize_test_summary(
-    total, grounded, blocked, hallucinated,
-    hallucination_probes_leaked,
-    sentiment_total, sentiment_correct, sentiment_wrong, sentiment_missing,
-    out_path: str = "test_service_charts.png"
-):
-    """
-    Produce a 2x3 visual dashboard from test_service.py run results.
-
-    Charts:
-      [0,0]  Pie  — Query Outcome Distribution (Grounded / Blocked / Hallucinated / Other)
-      [0,1]  Bar  — Hallucination Probe Results (Leaked vs Blocked)
-      [0,2]  Bar  — Key Metrics Overview (rates as %)
-      [1,0]  Pie  — Sentiment Accuracy Breakdown (Correct / Wrong / Missing)
-      [1,1]  Bar  — Sentiment Sample Distribution (Positive / Negative / Neutral)
-      [1,2]  Stacked Bar — Sentiment Scored vs Blocked (with correct/wrong overlay)
-    """
-    fig, axes = plt.subplots(2, 3, figsize=(18, 11))
-    fig.suptitle(
-        "BANANA Test Service — Run Summary Dashboard",
-        fontsize=16, fontweight="bold", color="#1A1A2E", y=1.01
-    )
-    _style(fig, axes.flat)
-
-    other = max(0, total - grounded - blocked)
-
-    # ── [0,0] Pie — Query Outcome Distribution ────────────────────────────────
-    ax = axes[0, 0]
-    p_vals   = [grounded, blocked, hallucinated, other]
-    p_labels = ["Grounded", "Blocked", "Hallucinated", "Other"]
-    p_colors = [_GREEN, _AMBER, _RED, "#AAAAAA"]
-    fv = [(v, l, c) for v, l, c in zip(p_vals, p_labels, p_colors) if v > 0]
-    wedges, _, autotexts = ax.pie(
-        [v for v, _, _ in fv], labels=None, colors=[c for _, _, c in fv],
-        autopct="%1.1f%%", startangle=140,
-        wedgeprops={"edgecolor": "white", "linewidth": 1.5}
-    )
-    for at in autotexts:
-        at.set_fontsize(9)
-        at.set_fontweight("bold")
-        at.set_color("white")
-    ax.legend(
-        wedges, [f"{l} ({v})" for v, l, _ in fv],
-        loc="lower center", bbox_to_anchor=(0.5, -0.2), fontsize=8
-    )
-    ax.set_title("Query Outcome Distribution", fontsize=11, fontweight="bold")
-
-    # ── [0,1] Bar — Hallucination Probe Results ───────────────────────────────
-    ax = axes[0, 1]
-    probe_total   = len(HALLUCINATION_QUERIES)
-    probe_blocked = probe_total - hallucination_probes_leaked
-    bar_vals = [probe_blocked, hallucination_probes_leaked]
-    bar_lbls = ["Blocked\n(correct)", "Leaked\n(vulnerable)"]
-    bar_cols = [_GREEN, _RED]
-    bars = ax.bar(bar_lbls, bar_vals, color=bar_cols, width=0.45, alpha=0.9, zorder=3)
-    ax.set_title(f"Hallucination Probe Results\n({probe_total} probes total)",
-                 fontsize=11, fontweight="bold")
-    ax.set_ylabel("Count")
-    ax.set_ylim(0, probe_total + 1)
-    for bar in bars:
-        h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, h + 0.1, str(int(h)),
-                ha="center", va="bottom", fontsize=13, fontweight="bold", color="#333")
-
-    # ── [0,2] Bar — Key Metrics Overview ─────────────────────────────────────
-    ax = axes[0, 2]
-    grounded_rate = round(grounded     / total * 100, 1) if total else 0
-    blocked_rate  = round(blocked      / total * 100, 1) if total else 0
-    hall_rate     = round(hallucinated / total * 100, 1) if total else 0
-    metric_names  = ["Grounded\nRate", "Blocked\nRate", "Hallucinated\nRate"]
-    metric_vals   = [grounded_rate, blocked_rate, hall_rate]
-    metric_colors = [_GREEN, _AMBER, _RED]
-    bars = ax.bar(metric_names, metric_vals, color=metric_colors, width=0.45, alpha=0.9, zorder=3)
-    ax.set_title(f"Key Metrics Overview\n({total} total queries)",
-                 fontsize=11, fontweight="bold")
-    ax.set_ylabel("Percentage (%)")
-    ax.set_ylim(0, 110)
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0f}%"))
-    for bar in bars:
-        h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, h + 1.5, f"{h:.1f}%",
-                ha="center", va="bottom", fontsize=11, fontweight="bold", color="#333")
-
-    # ── [1,0] Pie — Sentiment Accuracy Breakdown ──────────────────────────────
-    ax = axes[1, 0]
-    s_vals   = [sentiment_correct, sentiment_wrong, sentiment_missing]
-    s_labels = ["Correct", "Wrong", "Missing / Blocked"]
-    s_colors = [_GREEN, _RED, "#AAAAAA"]
-    sfv = [(v, l, c) for v, l, c in zip(s_vals, s_labels, s_colors) if v > 0]
-    if sfv:
-        wedges2, _, at2 = ax.pie(
-            [v for v, _, _ in sfv], labels=None, colors=[c for _, _, c in sfv],
-            autopct="%1.1f%%", startangle=140,
-            wedgeprops={"edgecolor": "white", "linewidth": 1.5}
-        )
-        for at in at2:
-            at.set_fontsize(9)
-            at.set_fontweight("bold")
-            at.set_color("white")
-        ax.legend(
-            wedges2, [f"{l} ({v})" for v, l, _ in sfv],
-            loc="lower center", bbox_to_anchor=(0.5, -0.2), fontsize=8
-        )
-    else:
-        ax.text(0.5, 0.5, "No sentiment data", ha="center", va="center",
-                transform=ax.transAxes, fontsize=11, color="#999")
-    scored  = sentiment_correct + sentiment_wrong
-    acc_str = f"{sentiment_correct / scored * 100:.1f}%" if scored else "N/A"
-    ax.set_title(f"Sentiment Accuracy Breakdown\n(accuracy = {acc_str})",
-                 fontsize=11, fontweight="bold")
-
-    # ── [1,1] Bar — Sentiment Sample Distribution ─────────────────────────────
-    ax = axes[1, 1]
-    s_cats = ["Positive", "Negative", "Neutral"]
-    s_cnts = [len(SENTIMENT_QUERIES_POSITIVE), len(SENTIMENT_QUERIES_NEGATIVE),
-              len(SENTIMENT_QUERIES_NEUTRAL)]
-    s_cols = [_GREEN, _RED, _BLUE]
-    bars = ax.bar(s_cats, s_cnts, color=s_cols, width=0.5, alpha=0.9, zorder=3)
-    ax.set_title("Sentiment Dataset Distribution\n(ground-truth class sizes)",
-                 fontsize=11, fontweight="bold")
-    ax.set_ylabel("# Samples")
-    for bar in bars:
-        h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, h + 0.2, str(int(h)),
-                ha="center", va="bottom", fontsize=12, fontweight="bold", color="#333")
-
-    # ── [1,2] Stacked Bar — Sentiment Scored vs Blocked ───────────────────────
-    ax = axes[1, 2]
-    scored_total = sentiment_correct + sentiment_wrong
-    cats2 = ["Scored", "Missing /\nBlocked"]
-    vals2 = [scored_total, sentiment_missing]
-    cols2 = [_BLUE, "#AAAAAA"]
-    bars2 = ax.bar(cats2, vals2, color=cols2, width=0.45, alpha=0.9, zorder=3)
-    ax.bar(["Scored"], [sentiment_correct], color=_GREEN, width=0.45, alpha=0.9, zorder=4,
-           label=f"Correct ({sentiment_correct})")
-    ax.bar(["Scored"], [sentiment_wrong], bottom=[sentiment_correct], color=_RED,
-           width=0.45, alpha=0.9, zorder=4, label=f"Wrong ({sentiment_wrong})")
-    ax.set_title(f"Sentiment Scored vs Blocked\n({sentiment_total} labeled queries)",
-                 fontsize=11, fontweight="bold")
-    ax.set_ylabel("Count")
-    ax.set_ylim(0, sentiment_total + 3)
-    ax.legend(fontsize=8)
-    for bar in bars2:
-        h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, h + 0.2, str(int(h)),
-                ha="center", va="bottom", fontsize=11, fontweight="bold", color="#333")
-
-    plt.tight_layout(pad=2.5)
-    plt.savefig(out_path, dpi=150, bbox_inches="tight", facecolor=_BG)
-    plt.close(fig)
-    print(f"\n    Test service charts saved to: {out_path}\n")
-
-
-# =========================================================
 # Main Execution
 # =========================================================
 
@@ -415,15 +228,15 @@ def main():
     sentiment_missing = 0
 
     for query in TEST_QUERIES:
-        result = run_test(query, sentiment_only=(query in SENTIMENT_GROUND_TRUTH))
+        result = run_test(query)
 
         if not result:
             continue
 
         total += 1
 
-        answer             = result.get("answer")
-        grounded_flag      = result.get("grounded", False)
+        answer = result.get("answer")
+        grounded_flag = result.get("grounded", False)
         hallucination_rate = result.get("hallucination_rate", 0.0)
 
         if answer == "INSUFFICIENT_EVIDENCE":
@@ -442,27 +255,25 @@ def main():
             print(f"     tools_used={result.get('tools_used')}  sentiment={result.get('sentiment')}")
 
         # Evaluate sentiment accuracy for labeled dataset queries
-        # (these run via sentiment_only=True so they bypass the entity guard)
         if query in SENTIMENT_GROUND_TRUTH:
             sentiment_total += 1
-            expected       = SENTIMENT_GROUND_TRUTH[query]
-            raw_sentiment  = result.get("sentiment")
+            expected = SENTIMENT_GROUND_TRUTH[query]
 
-            # sentiment field may be a dict {"label": ..., "confidence": ...}
-            # or a plain string depending on the AnalystAgent implementation
-            if isinstance(raw_sentiment, dict):
-                predicted = (raw_sentiment.get("label") or "").lower().strip()
-            else:
-                predicted = (raw_sentiment or "").lower().strip()
-
-            if not predicted:
+            # Pipeline blocked before sentiment was assigned — track separately
+            if answer == "INSUFFICIENT_EVIDENCE":
                 sentiment_missing += 1
-                print(f"  ⚠ SENTIMENT NULL — expected={expected!r}  query={query[:60]!r}")
-            elif predicted == expected:
-                sentiment_correct += 1
+                block_reason = result.get("block_reason", "BLOCKED")
+                print(f"  ⚠ SENTIMENT BLOCKED — expected={expected!r}  reason={block_reason}  query={query[:60]!r}")
             else:
-                sentiment_wrong += 1
-                print(f"  ✗ SENTIMENT MISMATCH — expected={expected!r} got={predicted!r}  query={query[:60]!r}")
+                predicted = (result.get("sentiment") or "").lower().strip()
+                if not predicted:
+                    sentiment_missing += 1
+                    print(f"  ⚠ SENTIMENT NULL — expected={expected!r}  query={query[:60]!r}")
+                elif predicted == expected:
+                    sentiment_correct += 1
+                else:
+                    sentiment_wrong += 1
+                    print(f"  ✗ SENTIMENT MISMATCH — expected={expected!r} got={predicted!r}  query={query[:60]!r}")
 
     # =====================================================
     # Summary
@@ -480,7 +291,7 @@ def main():
     print(f"Hallucinated Responses (>0 rate): {hallucinated}")
 
     grounded_rate = round((grounded / total) * 100, 2) if total else 0
-    blocked_rate  = round((blocked  / total) * 100, 2) if total else 0
+    blocked_rate = round((blocked / total) * 100, 2) if total else 0
 
     print(f"\nGrounded Rate: {grounded_rate}%")
     print(f"Blocked Rate: {blocked_rate}%")
@@ -530,19 +341,6 @@ def main():
 
     print("=" * 80)
     print("\nDone.\n")
-
-    # ── Generate visualizations ───────────────────────────────────────────────
-    visualize_test_summary(
-        total=total,
-        grounded=grounded,
-        blocked=blocked,
-        hallucinated=hallucinated,
-        hallucination_probes_leaked=hallucination_probes_leaked,
-        sentiment_total=sentiment_total,
-        sentiment_correct=sentiment_correct,
-        sentiment_wrong=sentiment_wrong,
-        sentiment_missing=sentiment_missing,
-    )
 
 
 if __name__ == "__main__":

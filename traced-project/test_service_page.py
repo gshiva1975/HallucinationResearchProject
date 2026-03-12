@@ -10,7 +10,6 @@ import matplotlib.patches as mpatches
 import numpy as np
 
 BASE_URL = "http://127.0.0.1:8080/analyze"
-#kubectl port-forward service/banana-api-service 8080:80
 
 # =========================================================
 # Query Categories
@@ -232,14 +231,12 @@ _BLUE   = "#3A7EBF"
 _PURPLE = "#7B5EA7"
 
 
-def _style(fig, axes):
-    fig.patch.set_facecolor(_BG)
-    for ax in (axes if hasattr(axes, "__iter__") else [axes]):
-        ax.set_facecolor(_BG)
-        ax.spines[["top", "right"]].set_visible(False)
-        ax.spines[["left", "bottom"]].set_color(_GRID)
-        ax.yaxis.grid(True, color=_GRID, linewidth=0.8, linestyle="--")
-        ax.set_axisbelow(True)
+def _save_fig(fig, path):
+    """Save a single figure and close it."""
+    plt.tight_layout(pad=2.5)
+    plt.savefig(path, dpi=150, bbox_inches="tight", facecolor=_BG)
+    plt.close(fig)
+    print(f"  📊  Saved: {path}")
 
 
 def visualize_test_summary(
@@ -249,150 +246,156 @@ def visualize_test_summary(
     out_path: str = "test_service_charts.png"
 ):
     """
-    Produce a 2x3 visual dashboard from test_service.py run results.
+    Save each chart as a separate PNG file.
 
-    Charts:
-      [0,0]  Pie  — Query Outcome Distribution (Grounded / Blocked / Hallucinated / Other)
-      [0,1]  Bar  — Hallucination Probe Results (Leaked vs Blocked)
-      [0,2]  Bar  — Key Metrics Overview (rates as %)
-      [1,0]  Pie  — Sentiment Accuracy Breakdown (Correct / Wrong / Missing)
-      [1,1]  Bar  — Sentiment Sample Distribution (Positive / Negative / Neutral)
-      [1,2]  Stacked Bar — Sentiment Scored vs Blocked (with correct/wrong overlay)
+    Files produced (in same directory as out_path):
+      test_01_outcome_distribution.png
+      test_02_hallucination_probes.png
+      test_03_key_metrics.png
+      test_04_sentiment_accuracy.png
+      test_05_sentiment_distribution.png
+      test_06_sentiment_scored_vs_blocked.png
     """
-    fig, axes = plt.subplots(2, 3, figsize=(18, 11))
-    fig.suptitle(
-        "BANANA Test Service — Run Summary Dashboard",
-        fontsize=16, fontweight="bold", color="#1A1A2E", y=1.01
-    )
-    _style(fig, axes.flat)
+    import os
+    base_dir = os.path.dirname(os.path.abspath(out_path))
+    prefix   = os.path.join(base_dir, "test")
 
     other = max(0, total - grounded - blocked)
 
-    # ── [0,0] Pie — Query Outcome Distribution ────────────────────────────────
-    ax = axes[0, 0]
+    print("\n  📊  Saving test service charts:\n")
+
+    # ── Chart 1: Query Outcome Distribution (Pie) ─────────────────────────────
+    fig, ax = plt.subplots(figsize=(7, 7))
+    fig.patch.set_facecolor(_BG); ax.set_facecolor(_BG)
     p_vals   = [grounded, blocked, hallucinated, other]
     p_labels = ["Grounded", "Blocked", "Hallucinated", "Other"]
     p_colors = [_GREEN, _AMBER, _RED, "#AAAAAA"]
     fv = [(v, l, c) for v, l, c in zip(p_vals, p_labels, p_colors) if v > 0]
     wedges, _, autotexts = ax.pie(
-        [v for v, _, _ in fv], labels=None, colors=[c for _, _, c in fv],
+        [v for v,_,_ in fv], labels=None, colors=[c for _,_,c in fv],
         autopct="%1.1f%%", startangle=140,
-        wedgeprops={"edgecolor": "white", "linewidth": 1.5}
+        wedgeprops={"edgecolor": "white", "linewidth": 2}
     )
     for at in autotexts:
-        at.set_fontsize(9)
-        at.set_fontweight("bold")
-        at.set_color("white")
-    ax.legend(
-        wedges, [f"{l} ({v})" for v, l, _ in fv],
-        loc="lower center", bbox_to_anchor=(0.5, -0.2), fontsize=8
-    )
-    ax.set_title("Query Outcome Distribution", fontsize=11, fontweight="bold")
+        at.set_fontsize(11); at.set_fontweight("bold"); at.set_color("white")
+    ax.legend(wedges, [f"{l} ({v})" for v,l,_ in fv],
+              loc="lower center", bbox_to_anchor=(0.5, -0.12), fontsize=10)
+    ax.set_title("Query Outcome Distribution", fontsize=13, fontweight="bold", pad=14)
+    _save_fig(fig, f"{prefix}_01_outcome_distribution.png")
 
-    # ── [0,1] Bar — Hallucination Probe Results ───────────────────────────────
-    ax = axes[0, 1]
+    # ── Chart 2: Hallucination Probe Results (Bar) ────────────────────────────
+    fig, ax = plt.subplots(figsize=(7, 6))
+    fig.patch.set_facecolor(_BG); ax.set_facecolor(_BG)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.yaxis.grid(True, color=_GRID, linewidth=0.8, linestyle="--"); ax.set_axisbelow(True)
     probe_total   = len(HALLUCINATION_QUERIES)
     probe_blocked = probe_total - hallucination_probes_leaked
-    bar_vals = [probe_blocked, hallucination_probes_leaked]
-    bar_lbls = ["Blocked\n(correct)", "Leaked\n(vulnerable)"]
-    bar_cols = [_GREEN, _RED]
-    bars = ax.bar(bar_lbls, bar_vals, color=bar_cols, width=0.45, alpha=0.9, zorder=3)
-    ax.set_title(f"Hallucination Probe Results\n({probe_total} probes total)",
-                 fontsize=11, fontweight="bold")
-    ax.set_ylabel("Count")
-    ax.set_ylim(0, probe_total + 1)
+    bars = ax.bar(
+        ["Blocked\n(correct)", "Leaked\n(vulnerable)"],
+        [probe_blocked, hallucination_probes_leaked],
+        color=[_GREEN, _RED], width=0.45, alpha=0.9, zorder=3
+    )
+    ax.set_title(f"Hallucination Probe Results  ({probe_total} probes total)",
+                 fontsize=13, fontweight="bold", pad=12)
+    ax.set_ylabel("Count"); ax.set_ylim(0, probe_total + 1)
     for bar in bars:
         h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, h + 0.1, str(int(h)),
-                ha="center", va="bottom", fontsize=13, fontweight="bold", color="#333")
+        ax.text(bar.get_x() + bar.get_width()/2, h + 0.1, str(int(h)),
+                ha="center", va="bottom", fontsize=14, fontweight="bold", color="#333")
+    _save_fig(fig, f"{prefix}_02_hallucination_probes.png")
 
-    # ── [0,2] Bar — Key Metrics Overview ─────────────────────────────────────
-    ax = axes[0, 2]
+    # ── Chart 3: Key Metrics Overview (Bar) ──────────────────────────────────
+    fig, ax = plt.subplots(figsize=(7, 6))
+    fig.patch.set_facecolor(_BG); ax.set_facecolor(_BG)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.yaxis.grid(True, color=_GRID, linewidth=0.8, linestyle="--"); ax.set_axisbelow(True)
     grounded_rate = round(grounded     / total * 100, 1) if total else 0
     blocked_rate  = round(blocked      / total * 100, 1) if total else 0
     hall_rate     = round(hallucinated / total * 100, 1) if total else 0
-    metric_names  = ["Grounded\nRate", "Blocked\nRate", "Hallucinated\nRate"]
-    metric_vals   = [grounded_rate, blocked_rate, hall_rate]
-    metric_colors = [_GREEN, _AMBER, _RED]
-    bars = ax.bar(metric_names, metric_vals, color=metric_colors, width=0.45, alpha=0.9, zorder=3)
-    ax.set_title(f"Key Metrics Overview\n({total} total queries)",
-                 fontsize=11, fontweight="bold")
-    ax.set_ylabel("Percentage (%)")
-    ax.set_ylim(0, 110)
+    bars = ax.bar(
+        ["Grounded\nRate", "Blocked\nRate", "Hallucinated\nRate"],
+        [grounded_rate, blocked_rate, hall_rate],
+        color=[_GREEN, _AMBER, _RED], width=0.45, alpha=0.9, zorder=3
+    )
+    ax.set_title(f"Key Metrics Overview  ({total} total queries)",
+                 fontsize=13, fontweight="bold", pad=12)
+    ax.set_ylabel("Percentage (%)"); ax.set_ylim(0, 110)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0f}%"))
     for bar in bars:
         h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, h + 1.5, f"{h:.1f}%",
-                ha="center", va="bottom", fontsize=11, fontweight="bold", color="#333")
+        ax.text(bar.get_x() + bar.get_width()/2, h + 1.5, f"{h:.1f}%",
+                ha="center", va="bottom", fontsize=12, fontweight="bold", color="#333")
+    _save_fig(fig, f"{prefix}_03_key_metrics.png")
 
-    # ── [1,0] Pie — Sentiment Accuracy Breakdown ──────────────────────────────
-    ax = axes[1, 0]
+    # ── Chart 4: Sentiment Accuracy Breakdown (Pie) ───────────────────────────
+    fig, ax = plt.subplots(figsize=(7, 7))
+    fig.patch.set_facecolor(_BG); ax.set_facecolor(_BG)
     s_vals   = [sentiment_correct, sentiment_wrong, sentiment_missing]
     s_labels = ["Correct", "Wrong", "Missing / Blocked"]
     s_colors = [_GREEN, _RED, "#AAAAAA"]
     sfv = [(v, l, c) for v, l, c in zip(s_vals, s_labels, s_colors) if v > 0]
     if sfv:
         wedges2, _, at2 = ax.pie(
-            [v for v, _, _ in sfv], labels=None, colors=[c for _, _, c in sfv],
+            [v for v,_,_ in sfv], labels=None, colors=[c for _,_,c in sfv],
             autopct="%1.1f%%", startangle=140,
-            wedgeprops={"edgecolor": "white", "linewidth": 1.5}
+            wedgeprops={"edgecolor": "white", "linewidth": 2}
         )
         for at in at2:
-            at.set_fontsize(9)
-            at.set_fontweight("bold")
-            at.set_color("white")
-        ax.legend(
-            wedges2, [f"{l} ({v})" for v, l, _ in sfv],
-            loc="lower center", bbox_to_anchor=(0.5, -0.2), fontsize=8
-        )
+            at.set_fontsize(11); at.set_fontweight("bold"); at.set_color("white")
+        ax.legend(wedges2, [f"{l} ({v})" for v,l,_ in sfv],
+                  loc="lower center", bbox_to_anchor=(0.5, -0.12), fontsize=10)
     else:
         ax.text(0.5, 0.5, "No sentiment data", ha="center", va="center",
-                transform=ax.transAxes, fontsize=11, color="#999")
+                transform=ax.transAxes, fontsize=13, color="#999")
     scored  = sentiment_correct + sentiment_wrong
     acc_str = f"{sentiment_correct / scored * 100:.1f}%" if scored else "N/A"
-    ax.set_title(f"Sentiment Accuracy Breakdown\n(accuracy = {acc_str})",
-                 fontsize=11, fontweight="bold")
+    ax.set_title(f"Sentiment Accuracy Breakdown  (accuracy = {acc_str})",
+                 fontsize=13, fontweight="bold", pad=14)
+    _save_fig(fig, f"{prefix}_04_sentiment_accuracy.png")
 
-    # ── [1,1] Bar — Sentiment Sample Distribution ─────────────────────────────
-    ax = axes[1, 1]
-    s_cats = ["Positive", "Negative", "Neutral"]
+    # ── Chart 5: Sentiment Dataset Distribution (Bar) ─────────────────────────
+    fig, ax = plt.subplots(figsize=(7, 6))
+    fig.patch.set_facecolor(_BG); ax.set_facecolor(_BG)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.yaxis.grid(True, color=_GRID, linewidth=0.8, linestyle="--"); ax.set_axisbelow(True)
     s_cnts = [len(SENTIMENT_QUERIES_POSITIVE), len(SENTIMENT_QUERIES_NEGATIVE),
               len(SENTIMENT_QUERIES_NEUTRAL)]
-    s_cols = [_GREEN, _RED, _BLUE]
-    bars = ax.bar(s_cats, s_cnts, color=s_cols, width=0.5, alpha=0.9, zorder=3)
+    bars = ax.bar(["Positive", "Negative", "Neutral"], s_cnts,
+                  color=[_GREEN, _RED, _BLUE], width=0.5, alpha=0.9, zorder=3)
     ax.set_title("Sentiment Dataset Distribution\n(ground-truth class sizes)",
-                 fontsize=11, fontweight="bold")
+                 fontsize=13, fontweight="bold", pad=12)
     ax.set_ylabel("# Samples")
     for bar in bars:
         h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, h + 0.2, str(int(h)),
-                ha="center", va="bottom", fontsize=12, fontweight="bold", color="#333")
+        ax.text(bar.get_x() + bar.get_width()/2, h + 0.2, str(int(h)),
+                ha="center", va="bottom", fontsize=13, fontweight="bold", color="#333")
+    _save_fig(fig, f"{prefix}_05_sentiment_distribution.png")
 
-    # ── [1,2] Stacked Bar — Sentiment Scored vs Blocked ───────────────────────
-    ax = axes[1, 2]
+    # ── Chart 6: Sentiment Scored vs Blocked (Stacked Bar) ───────────────────
+    fig, ax = plt.subplots(figsize=(7, 6))
+    fig.patch.set_facecolor(_BG); ax.set_facecolor(_BG)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.yaxis.grid(True, color=_GRID, linewidth=0.8, linestyle="--"); ax.set_axisbelow(True)
     scored_total = sentiment_correct + sentiment_wrong
-    cats2 = ["Scored", "Missing /\nBlocked"]
-    vals2 = [scored_total, sentiment_missing]
-    cols2 = [_BLUE, "#AAAAAA"]
-    bars2 = ax.bar(cats2, vals2, color=cols2, width=0.45, alpha=0.9, zorder=3)
+    bars2 = ax.bar(["Scored", "Missing /\nBlocked"],
+                   [scored_total, sentiment_missing],
+                   color=[_BLUE, "#AAAAAA"], width=0.45, alpha=0.9, zorder=3)
     ax.bar(["Scored"], [sentiment_correct], color=_GREEN, width=0.45, alpha=0.9, zorder=4,
            label=f"Correct ({sentiment_correct})")
-    ax.bar(["Scored"], [sentiment_wrong], bottom=[sentiment_correct], color=_RED,
-           width=0.45, alpha=0.9, zorder=4, label=f"Wrong ({sentiment_wrong})")
-    ax.set_title(f"Sentiment Scored vs Blocked\n({sentiment_total} labeled queries)",
-                 fontsize=11, fontweight="bold")
-    ax.set_ylabel("Count")
-    ax.set_ylim(0, sentiment_total + 3)
-    ax.legend(fontsize=8)
+    ax.bar(["Scored"], [sentiment_wrong], bottom=[sentiment_correct],
+           color=_RED, width=0.45, alpha=0.9, zorder=4, label=f"Wrong ({sentiment_wrong})")
+    ax.set_title(f"Sentiment Scored vs Blocked  ({sentiment_total} labeled queries)",
+                 fontsize=13, fontweight="bold", pad=12)
+    ax.set_ylabel("Count"); ax.set_ylim(0, sentiment_total + 3)
+    ax.legend(fontsize=9)
     for bar in bars2:
         h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, h + 0.2, str(int(h)),
-                ha="center", va="bottom", fontsize=11, fontweight="bold", color="#333")
+        ax.text(bar.get_x() + bar.get_width()/2, h + 0.2, str(int(h)),
+                ha="center", va="bottom", fontsize=12, fontweight="bold", color="#333")
+    _save_fig(fig, f"{prefix}_06_sentiment_scored_vs_blocked.png")
 
-    plt.tight_layout(pad=2.5)
-    plt.savefig(out_path, dpi=150, bbox_inches="tight", facecolor=_BG)
-    plt.close(fig)
-    print(f"\n    Test service charts saved to: {out_path}\n")
+    print(f"\n  ✅  All 6 charts saved to: {{base_dir}}/\n")
+
 
 
 # =========================================================

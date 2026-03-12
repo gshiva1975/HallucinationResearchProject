@@ -1,0 +1,719 @@
+import re
+import time
+import logging
+import hashlib
+from datetime import datetime, timezone
+from typing import TypedDict, List, Dict, Optional
+
+from fastapi import FastAPI, Request
+from pydantic import BaseModel
+
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_core.documents import Document
+
+from langgraph.graph import StateGraph, END
+from sklearn.metrics.pairwise import cosine_similarity
+
+from banana_service.config import settings
+from banana_service.ingestion.mcp_client import MCPClient
+from banana_service.agents.analyst import AnalystAgent
+from banana_service.agents.reflection import ReflectionAgent
+from banana_service.agents.scribe import ScribeAgent
+from logger import setup_logger, trace_step
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Loggers
+# ─────────────────────────────────────────────────────────────────────────────
+log_api     = setup_logger("API")
+log_intent  = setup_logger("Intent")
+log_fetch   = setup_logger("Fetch")
+log_valid   = setup_logger("Validate")
+log_store   = setup_logger("Store")
+log_retr    = setup_logger("Retrieve")
+log_eval    = setup_logger("Evaluate")
+log_answer  = setup_logger("Answer")
+log_analyst = setup_logger("Analyst")
+log_reflect = setup_logger("Reflection")
+log_scribe  = setup_logger("Scribe")
+log_graph   = setup_logger("Graph")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FastAPI
+# ─────────────────────────────────────────────────────────────────────────────
+app = FastAPI()
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    t0 = time.perf_counter()
+    log_api.info(f">>> {request.method} {request.url.path}")
+    response = await call_next(request)
+    elapsed  = round(time.perf_counter() - t0, 3)
+    log_api.info(f"<<< {request.method} {request.url.path}  status={response.status_code}  elapsed={elapsed}s")
+    return response
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Config
+# ─────────────────────────────────────────────────────────────────────────────
+PERSIST_DIR          = "./db"
+SIMILARITY_THRESHOLD = 0.55
+CONFIDENCE_THRESHOLD = 0.70
+
+# FIX 3 — Stale document TTL: reject documents older than this many seconds
+DOCUMENT_TTL_SECONDS = 3600
+
+ENTITY_REGISTRY = {
+    "AAPL": "APPLE",
+    "MSFT": "MICROSOFT",
+    "TSLA": "TESLA",
+    "NVDA": "NVIDIA",
+}
+SUPPORTED_YEARS = ["2022", "2023", "2024"]
+
+# FIX 1 — Social sentinel bypass: list of known placeholder substrings to reject
+PLACEHOLDER_STRINGS = [
+    "trending positively on investor forums",
+    "sentiment score 0.78",
+    "no real data available",
+    "placeholder sentiment",
+]
+
+log_api.info(f"EXPERIMENT_MODE={settings.EXPERIMENT_MODE}")
+log_api.info(f"MCP_MARKET_URL={settings.MCP_MARKET_URL}")
+log_api.info(f"MCP_SEC_URL={settings.MCP_SEC_URL}")
+log_api.info(f"MCP_SOCIAL_URL={settings.MCP_SOCIAL_URL}")
+log_api.info(f"DOCUMENT_TTL_SECONDS={DOCUMENT_TTL_SECONDS}")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Embeddings + Vector store
+# ─────────────────────────────────────────────────────────────────────────────
+log_api.info("Loading HuggingFace embedding model...")
+embedding = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+log_api.info("Embedding model ready.")
+
+vectorstore = Chroma(persist_directory=PERSIST_DIR, embedding_function=embedding)
+log_api.info(f"ChromaDB vector store ready  persist_dir={PERSIST_DIR}")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MCP Clients
+# ─────────────────────────────────────────────────────────────────────────────
+_market_client = MCPClient(settings.MCP_MARKET_URL) if settings.MCP_MARKET_URL else None
+_sec_client    = MCPClient(settings.MCP_SEC_URL)    if settings.MCP_SEC_URL    else None
+_social_client = MCPClient(settings.MCP_SOCIAL_URL) if settings.MCP_SOCIAL_URL else None
+
+log_api.info(f"MCP clients  market={'ok' if _market_client else 'not configured'}  "
+             f"sec={'ok' if _sec_client else 'not configured'}  "
+             f"social={'ok' if _social_client else 'not configured'}")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Agent State
+# ─────────────────────────────────────────────────────────────────────────────
+class AgentState(TypedDict):
+    query:          str
+    intent_blocked: bool
+    block_reason:   Optional[str]
+    fetched_data:   Dict[str, str]
+    retrieved_docs: List[str]
+    answer:         str
+    threshold:      float
+    sentiment:      Optional[Dict]
+    proceed:        Optional[bool]
+    report:         Optional[str]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Utility helpers
+# ─────────────────────────────────────────────────────────────────────────────
+def entity_exists(query: str) -> bool:
+    q = query.upper()
+    return any(t in q or n in q for t, n in ENTITY_REGISTRY.items())
+
+def validate_year(query: str) -> Optional[str]:
+    m = re.search(r"20\d{2}", query)
+    if m and m.group() not in SUPPORTED_YEARS:
+        return "BLOCKED_UNSUPPORTED_DOCUMENT_YEAR"
+    return None
+
+def extract_ticker(query: str) -> Optional[str]:
+    q = query.upper()
+    return next((t for t in ENTITY_REGISTRY if t in q), None)
+
+def hash_text(text: str) -> str:
+    return hashlib.md5(text.encode()).hexdigest()
+
+def now_utc_ts() -> float:
+    return datetime.now(timezone.utc).timestamp()
+
+# FIX 1 helper — check content against all known placeholder strings
+def is_placeholder(content: str) -> bool:
+    lower = content.lower()
+    return any(p in lower for p in PLACEHOLDER_STRINGS)
+
+ADVISORY_KEYWORDS = [
+    "good investment", "overvalued", "undervalued",
+    "should i", "buy", "sell", "predict", "future",
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Agent instances
+# ─────────────────────────────────────────────────────────────────────────────
+log_api.info("Initialising AnalystAgent (loading FinBERT)...")
+_analyst_agent    = AnalystAgent()
+_reflection_agent = ReflectionAgent()
+_scribe_agent     = ScribeAgent()
+log_api.info("AnalystAgent / ReflectionAgent / ScribeAgent ready")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Graph nodes
+# ─────────────────────────────────────────────────────────────────────────────
+
+def intent_node(state: AgentState) -> AgentState:
+    """
+    Layer 1 — Intent guard.
+    Blocks advisory/speculative queries before any data is fetched.
+    Block reason: BLOCKED_ADVISORY_QUERY
+    """
+    with trace_step(log_intent, "intent_node", query=repr(state["query"][:60])):
+        q   = state["query"].lower()
+        hit = next((kw for kw in ADVISORY_KEYWORDS if kw in q), None)
+        if hit:
+            log_intent.warning(f"  Advisory keyword detected: '{hit}'  -> BLOCKING")
+            state["intent_blocked"] = True
+            state["block_reason"]   = "BLOCKED_ADVISORY_QUERY"
+            state["answer"]         = "INSUFFICIENT_EVIDENCE"
+        else:
+            log_intent.info("  No advisory keywords — query allowed through")
+            state["intent_blocked"] = False
+            state["block_reason"]   = None
+    return state
+
+
+def _call_mcp(client, tool: str, ticker: str, label: str) -> str:
+    if client is None:
+        log_fetch.warning(f"  {label} MCP client not configured — skipping")
+        return ""
+    with trace_step(log_fetch, f"mcp_call/{label}", tool=tool, ticker=ticker):
+        try:
+            results = client.call_tool(tool, {"ticker": ticker})
+            data    = " ".join(results) if isinstance(results, list) else str(results)
+            log_fetch.info(f"  {label} -> {data[:120]}")
+            return data
+        except Exception as e:
+            log_fetch.error(f"  {label} MCP call failed: {e}")
+            return ""
+
+
+def fetch_node(state: AgentState) -> AgentState:
+    """
+    Layer 2 — Entity + temporal guard.
+    Block reasons: BLOCKED_UNKNOWN_ENTITY, BLOCKED_UNSUPPORTED_DOCUMENT_YEAR
+    """
+    with trace_step(log_fetch, "fetch_node"):
+        if state["intent_blocked"]:
+            log_fetch.info("  Skipping fetch — query already blocked")
+            return state
+
+        if not entity_exists(state["query"]):
+            log_fetch.warning("  Unknown entity — blocking query")
+            state["answer"]       = "INSUFFICIENT_EVIDENCE"
+            state["block_reason"] = "BLOCKED_UNKNOWN_ENTITY"
+            return state
+
+        year_block = validate_year(state["query"])
+        if year_block:
+            log_fetch.warning(f"  Year not in supported range -> {year_block}")
+            state["answer"]       = "INSUFFICIENT_EVIDENCE"
+            state["block_reason"] = year_block
+            return state
+
+        ticker = extract_ticker(state["query"]) or state["query"].split()[0]
+        log_fetch.info(f"  Extracted ticker: {ticker}")
+
+        market = _call_mcp(_market_client, "fetch_market_data",     ticker, "MARKET")
+        sec    = _call_mcp(_sec_client,    "fetch_sec_filings",      ticker, "SEC")
+        social = _call_mcp(_social_client, "fetch_social_sentiment", ticker, "SOCIAL")
+
+        state["fetched_data"] = {
+            k: v for k, v in
+            {"market": market, "sec": sec, "social": social}.items()
+            if v
+        }
+        log_fetch.info(f"  Sources fetched: {list(state['fetched_data'].keys())}")
+    return state
+
+
+def validate_node(state: AgentState) -> AgentState:
+    """
+    Layer 3 — Data quality guard.
+    Block reason: BLOCKED_INVALID_TOOL_OUTPUT
+
+    FIX 1 — Social sentinel bypass:
+      Added 4th check 'not_placeholder' to reject hardcoded placeholder
+      strings returned by the social MCP server. Previously the string
+      "NVDA trending positively on investor forums with sentiment score 0.78"
+      passed the original 3 checks (has_number, has_entity, not_echo) and
+      acted as fabricated grounding evidence.
+
+    4 checks applied per document:
+      not_echo        — content is not a mirror of the query
+      has_number      — content contains at least one numeric value
+      has_entity      — content references a known registered entity
+      not_placeholder — content does not match any known placeholder pattern  [FIX 1]
+    """
+    with trace_step(log_valid, "validate_node"):
+        if state.get("block_reason"):
+            log_valid.info("  Skipping — already blocked")
+            return state
+
+        valid = {}
+        for source, content in state["fetched_data"].items():
+            checks = {
+                "not_echo":        state["query"].lower() not in content.lower(),
+                "has_number":      bool(re.search(r"\d+(\.\d+)?", content)),
+                "has_entity":      any(
+                                       t in content.upper() or n in content.upper()
+                                       for t, n in ENTITY_REGISTRY.items()
+                                   ),
+                # FIX 1 — 4th check: reject hardcoded placeholder strings
+                "not_placeholder": not is_placeholder(content),
+            }
+            passed = all(checks.values())
+            log_valid.info(
+                f"  {source:8s}  checks={checks}  -> {'PASS' if passed else 'FAIL'}"
+            )
+            if passed:
+                valid[source] = content
+
+        if not valid:
+            log_valid.warning("  All sources failed validation -> BLOCKED_INVALID_TOOL_OUTPUT")
+            state["answer"]       = "INSUFFICIENT_EVIDENCE"
+            state["block_reason"] = "BLOCKED_INVALID_TOOL_OUTPUT"
+            state["fetched_data"] = {}
+        else:
+            state["fetched_data"] = valid
+            log_valid.info(f"  Valid sources: {list(valid.keys())}")
+    return state
+
+
+def store_node(state: AgentState) -> AgentState:
+    """
+    Embeds validated documents into ChromaDB.
+
+    FIX 3 (partial) — Stale document TTL:
+      Stores a 'stored_at' UTC timestamp in each document's metadata.
+      retrieve_node uses this timestamp to evict documents older than
+      DOCUMENT_TTL_SECONDS, preventing stale cached data from
+      contaminating future queries.
+    """
+    with trace_step(log_store, "store_node"):
+        if state.get("block_reason"):
+            log_store.info("  Skipping — already blocked")
+            return state
+
+        now_ts = now_utc_ts()
+        docs = [
+            Document(
+                page_content=content,
+                metadata={
+                    "source":    source,
+                    "doc_id":    hash_text(content),
+                    "stored_at": now_ts,     # FIX 3 — TTL timestamp
+                }
+            )
+            for source, content in state["fetched_data"].items()
+        ]
+        if docs:
+            vectorstore.add_documents(docs)
+            vectorstore.persist()
+            log_store.info(
+                f"  Stored {len(docs)} document(s) to ChromaDB  stored_at={now_ts:.0f}"
+            )
+        else:
+            log_store.warning("  No documents to store")
+    return state
+
+
+def retrieve_node(state: AgentState) -> AgentState:
+    """
+    Retrieves candidate documents from ChromaDB.
+
+    FIX 3 — Stale document TTL:
+      After retrieval, documents whose 'stored_at' timestamp is older than
+      DOCUMENT_TTL_SECONDS are evicted. This fixes the stale ChromaDB probe:
+      a query for AAPL price on January 15, 2024 could previously be answered
+      by cached documents from a different session. Now those documents are
+      rejected before reaching evaluate_node.
+
+      Block reason if all docs evicted: BLOCKED_STALE_DOCUMENTS
+    """
+    with trace_step(log_retr, "retrieve_node"):
+        if state.get("block_reason"):
+            log_retr.info("  Skipping — already blocked")
+            return state
+
+        raw_docs = vectorstore.similarity_search(state["query"], k=5)
+        log_retr.info(f"  Raw retrieval returned {len(raw_docs)} doc(s)")
+
+        # FIX 3 — TTL eviction
+        now_ts  = now_utc_ts()
+        cutoff  = now_ts - DOCUMENT_TTL_SECONDS
+        fresh   = []
+        stale_n = 0
+
+        for doc in raw_docs:
+            stored_at = doc.metadata.get("stored_at")
+            if stored_at is None:
+                log_retr.warning(
+                    f"  Doc missing stored_at — treating as stale: {doc.page_content[:60]}"
+                )
+                stale_n += 1
+                continue
+            age = now_ts - stored_at
+            if stored_at < cutoff:
+                log_retr.warning(
+                    f"  Evicting stale doc  age={age:.0f}s > TTL={DOCUMENT_TTL_SECONDS}s  "
+                    f"content={doc.page_content[:60]}"
+                )
+                stale_n += 1
+            else:
+                fresh.append(doc)
+
+        if stale_n:
+            log_retr.warning(f"  TTL eviction removed {stale_n} stale document(s)")
+
+        if not fresh:
+            log_retr.warning("  All documents evicted by TTL -> BLOCKED_STALE_DOCUMENTS")
+            state["answer"]         = "INSUFFICIENT_EVIDENCE"
+            state["block_reason"]   = "BLOCKED_STALE_DOCUMENTS"
+            state["retrieved_docs"] = []
+            return state
+
+        state["retrieved_docs"] = [d.page_content for d in fresh]
+        log_retr.info(f"  {len(state['retrieved_docs'])} fresh doc(s) after TTL filter")
+        for i, d in enumerate(state["retrieved_docs"]):
+            log_retr.debug(f"    [{i}] {d[:100]}")
+    return state
+
+
+def ticker_guard_node(state: AgentState) -> AgentState:
+    """
+    Layer 4 — Cross-ticker contamination guard.
+
+    FIX 2 — Cross-ticker contamination:
+      After retrieval, each document is checked to confirm it explicitly
+      mentions the queried ticker. Documents belonging to a different ticker
+      (e.g. AAPL documents returned for an MSFT query due to similar financial
+      vocabulary) are dropped before similarity scoring.
+
+      Previously, AAPL documents could score above the 0.55 cosine similarity
+      threshold against an MSFT query, causing AAPL revenue data to be
+      returned as the grounded answer to an MSFT revenue query.
+
+      Block reason if all docs dropped: BLOCKED_TICKER_MISMATCH
+    """
+    with trace_step(log_retr, "ticker_guard_node"):
+        if state.get("block_reason"):
+            log_retr.info("  Skipping — already blocked")
+            return state
+
+        ticker = extract_ticker(state["query"])
+        if not ticker:
+            log_retr.info("  No ticker in query — skipping ticker guard")
+            return state
+
+        # FIX 2 — Keep only documents that explicitly mention the queried ticker
+        filtered = [
+            doc for doc in state["retrieved_docs"]
+            if ticker in doc.upper()
+        ]
+        dropped = len(state["retrieved_docs"]) - len(filtered)
+
+        if dropped:
+            log_retr.warning(
+                f"  Ticker guard dropped {dropped} doc(s) not containing '{ticker}'"
+            )
+
+        if not filtered:
+            log_retr.warning(
+                f"  All retrieved docs failed ticker guard -> BLOCKED_TICKER_MISMATCH"
+            )
+            state["answer"]         = "INSUFFICIENT_EVIDENCE"
+            state["block_reason"]   = "BLOCKED_TICKER_MISMATCH"
+            state["retrieved_docs"] = []
+        else:
+            state["retrieved_docs"] = filtered
+            log_retr.info(
+                f"  Ticker guard passed {len(filtered)} doc(s) for ticker='{ticker}'"
+            )
+    return state
+
+
+def evaluate_node(state: AgentState) -> AgentState:
+    """
+    Layer 5 — Relevance guard.
+    Block reasons: BLOCKED_NO_RETRIEVAL, BLOCKED_LOW_SIMILARITY
+    Threshold: SIMILARITY_THRESHOLD = 0.55
+    """
+    with trace_step(log_eval, "evaluate_node"):
+        if state.get("block_reason"):
+            log_eval.info("  Skipping — already blocked")
+            return state
+
+        if not state["retrieved_docs"]:
+            log_eval.warning("  No retrieved docs -> BLOCKED_NO_RETRIEVAL")
+            state["answer"]       = "INSUFFICIENT_EVIDENCE"
+            state["block_reason"] = "BLOCKED_NO_RETRIEVAL"
+            return state
+
+        query_emb = embedding.embed_query(state["query"])
+        scores    = []
+        for doc in state["retrieved_docs"]:
+            doc_emb = embedding.embed_query(doc)
+            score   = cosine_similarity([query_emb], [doc_emb])[0][0]
+            scores.append(score)
+            log_eval.info(f"  similarity={score:.4f}  doc={doc[:80]}")
+
+        max_score = max(scores)
+        log_eval.info(
+            f"  max_similarity={max_score:.4f}  threshold={SIMILARITY_THRESHOLD}"
+        )
+
+        if max_score < SIMILARITY_THRESHOLD:
+            log_eval.warning("  Below threshold -> BLOCKED_LOW_SIMILARITY")
+            state["answer"]         = "INSUFFICIENT_EVIDENCE"
+            state["block_reason"]   = "BLOCKED_LOW_SIMILARITY"
+            state["retrieved_docs"] = []
+        else:
+            log_eval.info("  Similarity check passed")
+    return state
+
+
+def answer_node(state: AgentState) -> AgentState:
+    """
+    Assembles the final answer by concatenating all retrieved documents.
+    No LLM generation — answer IS the retrieved documents.
+    """
+    with trace_step(log_answer, "answer_node"):
+        if state.get("answer") == "INSUFFICIENT_EVIDENCE":
+            log_answer.info(
+                f"  Returning INSUFFICIENT_EVIDENCE  reason={state.get('block_reason')}"
+            )
+            return state
+
+        if not state["retrieved_docs"]:
+            log_answer.warning("  No docs available -> BLOCKED_EMPTY_RESULT")
+            state["answer"]       = "INSUFFICIENT_EVIDENCE"
+            state["block_reason"] = "BLOCKED_EMPTY_RESULT"
+            return state
+
+        state["answer"] = "\n\n".join(state["retrieved_docs"])
+        log_answer.info(
+            f"  Answer built from {len(state['retrieved_docs'])} doc(s)  "
+            f"length={len(state['answer'])} chars"
+        )
+    return state
+
+
+def analyst_node(state: AgentState) -> AgentState:
+    """
+    Layer 6 — FinBERT sentiment analysis (ProsusAI/finbert).
+    Produces: sentiment label (positive/negative/neutral) + confidence score.
+    """
+    with trace_step(log_analyst, "analyst_node"):
+        if state.get("answer") == "INSUFFICIENT_EVIDENCE":
+            log_analyst.info("  Skipping — query blocked upstream")
+            state["proceed"] = False
+            return state
+        state = _analyst_agent.run(state)
+        log_analyst.info(
+            f"  Sentiment={state['sentiment']['label']}  "
+            f"confidence={state['sentiment']['confidence']:.4f}"
+        )
+    return state
+
+
+def reflection_node(state: AgentState) -> AgentState:
+    """
+    Layer 7 — Confidence gate.
+    Blocks report generation if FinBERT confidence < CONFIDENCE_THRESHOLD (0.70).
+    Sets proceed=True/False for conditional routing.
+    """
+    with trace_step(log_reflect, "reflection_node"):
+        if state.get("answer") == "INSUFFICIENT_EVIDENCE":
+            log_reflect.info("  Skipping — query blocked upstream")
+            state["proceed"] = False
+            return state
+        state = _reflection_agent.run(state)
+        log_reflect.info(f"  proceed={state['proceed']}")
+    return state
+
+
+def scribe_node(state: AgentState) -> AgentState:
+    """
+    Formats a Financial Report from the answer and sentiment signal.
+    Only reached when reflection_node sets proceed=True.
+    """
+    with trace_step(log_scribe, "scribe_node"):
+        state = _scribe_agent.run(state)
+        log_scribe.info(
+            f"  Report generated  length={len(state.get('report', ''))} chars"
+        )
+    return state
+
+
+def _route_after_reflection(state: AgentState) -> str:
+    """Conditional edge: route to scribe only if confidence threshold passed."""
+    if state.get("proceed"):
+        log_reflect.info("  Routing -> scribe")
+        return "scribe"
+    log_reflect.info("  Routing -> __end__ (low confidence)")
+    return "__end__"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Build LangGraph
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Pipeline (11 nodes):
+#   intent -> fetch -> validate -> store -> retrieve -> ticker_guard
+#   -> evaluate -> answer -> analyst -> reflection -> (scribe | END)
+#
+# All 3 hallucination probe fixes applied:
+#   FIX 1: validate_node  — not_placeholder check  (social sentinel bypass)
+#   FIX 2: ticker_guard_node                        (cross-ticker contamination)
+#   FIX 3: retrieve_node  — TTL eviction            (stale document probe)
+#
+# Block reasons by node:
+#   intent_node       -> BLOCKED_ADVISORY_QUERY
+#   fetch_node        -> BLOCKED_UNKNOWN_ENTITY, BLOCKED_UNSUPPORTED_DOCUMENT_YEAR
+#   validate_node     -> BLOCKED_INVALID_TOOL_OUTPUT
+#   retrieve_node     -> BLOCKED_STALE_DOCUMENTS           [FIX 3]
+#   ticker_guard_node -> BLOCKED_TICKER_MISMATCH           [FIX 2]
+#   evaluate_node     -> BLOCKED_NO_RETRIEVAL, BLOCKED_LOW_SIMILARITY
+#   answer_node       -> BLOCKED_EMPTY_RESULT
+#   reflection_node   -> routes to END if confidence < 0.70
+#
+# ─────────────────────────────────────────────────────────────────────────────
+log_graph.info("Building LangGraph StateGraph...")
+workflow = StateGraph(AgentState)
+
+for name, fn in [
+    ("intent",       intent_node),
+    ("fetch",        fetch_node),
+    ("validate",     validate_node),
+    ("store",        store_node),
+    ("retrieve",     retrieve_node),
+    ("ticker_guard", ticker_guard_node),
+    ("evaluate",     evaluate_node),
+    ("answer",       answer_node),
+    ("analyst",      analyst_node),
+    ("reflection",   reflection_node),
+    ("scribe",       scribe_node),
+]:
+    workflow.add_node(name, fn)
+    log_graph.info(f"  Node registered: {name}")
+
+workflow.set_entry_point("intent")
+
+for a, b in [
+    ("intent",       "fetch"),
+    ("fetch",        "validate"),
+    ("validate",     "store"),
+    ("store",        "retrieve"),
+    ("retrieve",     "ticker_guard"),
+    ("ticker_guard", "evaluate"),
+    ("evaluate",     "answer"),
+    ("answer",       "analyst"),
+    ("analyst",      "reflection"),
+    ("scribe",       END),
+]:
+    workflow.add_edge(a, b)
+    log_graph.info(f"  Edge: {a} -> {b}")
+
+workflow.add_conditional_edges(
+    "reflection",
+    _route_after_reflection,
+    {"scribe": "scribe", "__end__": END},
+)
+log_graph.info("  Conditional edge: reflection -> (scribe | __end__)")
+
+agent = workflow.compile()
+log_graph.info("LangGraph compiled")
+
+# ─────────────────────────────────────────────────────────────────────────────
+# API
+# ─────────────────────────────────────────────────────────────────────────────
+class QueryRequest(BaseModel):
+    query: str
+    sentiment_only: bool = False  # skip graph; run FinBERT directly on query text
+
+
+@app.post("/analyze")
+def analyze(request: QueryRequest):
+    log_api.info(f"Received query: {request.query!r}  sentiment_only={request.sentiment_only}")
+
+    # ── Sentiment-only mode ───────────────────────────────────────────────────
+    # Bypasses the full graph (entity guard, fetch, retrieve, etc.) and runs
+    # FinBERT directly on the raw query text.  Intended for plain-text financial
+    # sentences that contain no known ticker but carry meaningful sentiment.
+    if request.sentiment_only:
+        with trace_step(log_api, "sentiment_only", query=repr(request.query[:60])):
+            state: AgentState = {
+                "query":          request.query,
+                "intent_blocked": False,
+                "block_reason":   None,
+                "fetched_data":   {},
+                "retrieved_docs": [],
+                "answer":         request.query,   # FinBERT classifies this text
+                "threshold":      CONFIDENCE_THRESHOLD,
+                "sentiment":      None,
+                "proceed":        None,
+                "report":         None,
+            }
+            state = _analyst_agent.run(state)
+            sentiment = state.get("sentiment")
+            log_api.info(f"sentiment_only result  sentiment={sentiment}")
+            return {
+                "answer":             request.query,
+                "grounded":           False,
+                "hallucination_rate": 0.0,
+                "faithfulness_score": None,
+                "block_reason":       None,
+                "tools_used":         [],
+                "sentiment":          sentiment,
+                "report":             None,
+            }
+
+    # ── Normal pipeline ───────────────────────────────────────────────────────
+    with trace_step(log_api, "agent.invoke", query=repr(request.query[:60])):
+        result = agent.invoke({
+            "query":          request.query,
+            "intent_blocked": False,
+            "block_reason":   None,
+            "fetched_data":   {},
+            "retrieved_docs": [],
+            "answer":         "",
+            "threshold":      CONFIDENCE_THRESHOLD,
+            "sentiment":      None,
+            "proceed":        None,
+            "report":         None,
+        })
+
+    grounded = result["answer"] != "INSUFFICIENT_EVIDENCE"
+    response = {
+        "answer":             result["answer"],
+        "grounded":           grounded,
+        "hallucination_rate": 0.0,
+        "faithfulness_score": 1.0 if grounded else None,
+        "block_reason":       result.get("block_reason"),
+        "tools_used":         list(result.get("fetched_data", {}).keys()),
+        "sentiment":          result.get("sentiment"),
+        "report":             result.get("report"),
+    }
+    log_api.info(
+        f"Response  grounded={grounded}  "
+        f"block={result.get('block_reason')}  "
+        f"tools={response['tools_used']}  "
+        f"sentiment={result.get('sentiment')}  "
+        f"proceed={result.get('proceed')}"
+    )
+    return response

@@ -34,13 +34,11 @@ import sys
 import time
 from dataclasses import dataclass, asdict, field
 from typing import Optional, List, Tuple
+import matplotlib.patches as mpatches
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -641,25 +639,37 @@ def _fig_style(fig, ax_list):
         ax.set_axisbelow(True)
 
 
+def _save_fig(fig, path):
+    """Save a single figure and close it."""
+    plt.tight_layout(pad=2.5)
+    plt.savefig(path, dpi=150, bbox_inches="tight", facecolor=BG_COLOR)
+    plt.close(fig)
+    log.info("Chart saved -> %s", path)
+    print(f"  📊  Saved: {path}")
+
+
 def visualize_results(results: list, out_path: str = "benchmark_charts.png"):
     """
-    Generate a 2×3 chart dashboard from benchmark results and save to out_path.
+    Save each chart as a separate PNG file.
 
-    Charts:
-      [0,0]  Bar — Hallucination Rate by Category (BASELINE vs OPTIMIZED)
-      [0,1]  Bar — Faithfulness Score by Category (BASELINE vs OPTIMIZED)
-      [0,2]  Pie — Overall Query Outcome Distribution (OPTIMIZED)
-      [1,0]  Bar — Average Latency by Category (BASELINE vs OPTIMIZED)
-      [1,1]  Bar — Block Rate by Category (OPTIMIZED only)
-      [1,2]  Pie — Block Reason Breakdown (OPTIMIZED)
+    Files produced (in same directory as out_path):
+      benchmark_01_hallucination_rate.png
+      benchmark_02_faithfulness_score.png
+      benchmark_03_outcome_distribution.png
+      benchmark_04_latency.png
+      benchmark_05_block_rate.png
+      benchmark_06_block_reasons.png
     """
-    log.info("Generating benchmark visualizations -> %s", out_path)
+    import os
+    base_dir    = os.path.dirname(os.path.abspath(out_path))
+    prefix      = os.path.join(base_dir, "benchmark")
 
-    cats       = sorted({r.category for r in results})
-    base_res   = [r for r in results if r.mode == "BASELINE"]
-    opt_res    = [r for r in results if r.mode == "OPTIMIZED"]
+    log.info("Generating benchmark visualizations -> %s/benchmark_0*.png", base_dir)
 
-    # ── per-category aggregates ──────────────────────────────────────────────
+    cats     = sorted({r.category for r in results})
+    base_res = [r for r in results if r.mode == "BASELINE"]
+    opt_res  = [r for r in results if r.mode == "OPTIMIZED"]
+
     def cat_mean(res_list, attr):
         return [
             (sum(getattr(r, attr) for r in res_list if r.category == c) /
@@ -680,119 +690,130 @@ def visualize_results(results: list, out_path: str = "benchmark_charts.png"):
         for c in cats
     ]
 
-    # ── outcome counts for pie ────────────────────────────────────────────────
-    n_grounded  = sum(1 for r in opt_res if r.grounded)
-    n_blocked   = sum(1 for r in opt_res if r.blocked and not r.grounded)
-    n_other     = len(opt_res) - n_grounded - n_blocked
+    n_grounded = sum(1 for r in opt_res if r.grounded)
+    n_blocked  = sum(1 for r in opt_res if r.blocked and not r.grounded)
+    n_other    = len(opt_res) - n_grounded - n_blocked
 
-    # ── block reason breakdown for pie ───────────────────────────────────────
     block_reasons: dict[str, int] = {}
     for r in opt_res:
         if r.block_reason:
             short = r.block_reason.replace("BLOCKED_", "")
             block_reasons[short] = block_reasons.get(short, 0) + 1
 
-    # ── layout ────────────────────────────────────────────────────────────────
-    fig, axes = plt.subplots(2, 3, figsize=(18, 11))
-    fig.suptitle(
-        "BANANA Benchmark — Baseline vs Optimized Dashboard",
-        fontsize=16, fontweight="bold", color="#1A1A2E", y=1.01
-    )
-    _fig_style(fig, axes.flat)
-
     x      = np.arange(len(cats))
     w      = 0.38
     labels = [c.replace("_", "\n") for c in cats]
 
-    # ── [0,0] Hallucination Rate by Category ─────────────────────────────────
-    ax = axes[0, 0]
+    print("\n  📊  Saving benchmark charts:\n")
+
+    # ── Chart 1: Hallucination Rate by Category ───────────────────────────────
+    fig, ax = plt.subplots(figsize=(10, 6))
+    fig.patch.set_facecolor(BG_COLOR); ax.set_facecolor(BG_COLOR)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.yaxis.grid(True, color=GRID_COLOR, linewidth=0.8, linestyle="--"); ax.set_axisbelow(True)
     b0 = ax.bar(x - w/2, b_hall, w, label="BASELINE",  color=PALETTE_BASELINE,  alpha=0.9, zorder=3)
     b1 = ax.bar(x + w/2, o_hall, w, label="OPTIMIZED", color=PALETTE_OPTIMIZED, alpha=0.9, zorder=3)
-    ax.set_title("Hallucination Rate by Category\n(lower is better)", fontsize=11, fontweight="bold")
-    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=8)
-    ax.set_ylabel("Hallucination Rate"); ax.set_ylim(0, 1.1)
+    ax.set_title("Hallucination Rate by Category  (lower is better)",
+                 fontsize=13, fontweight="bold", pad=12)
+    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=9)
+    ax.set_ylabel("Hallucination Rate"); ax.set_ylim(0, 1.15)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
-    ax.legend(fontsize=8)
+    ax.legend(fontsize=9)
     for bar in list(b0) + list(b1):
         h = bar.get_height()
         if h > 0.01:
             ax.text(bar.get_x() + bar.get_width()/2, h + 0.02, f"{h:.0%}",
-                    ha="center", va="bottom", fontsize=7, color="#333")
+                    ha="center", va="bottom", fontsize=8, color="#333")
+    _save_fig(fig, f"{prefix}_01_hallucination_rate.png")
 
-    # ── [0,1] Faithfulness Score by Category ─────────────────────────────────
-    ax = axes[0, 1]
+    # ── Chart 2: Faithfulness Score by Category ───────────────────────────────
+    fig, ax = plt.subplots(figsize=(10, 6))
+    fig.patch.set_facecolor(BG_COLOR); ax.set_facecolor(BG_COLOR)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.yaxis.grid(True, color=GRID_COLOR, linewidth=0.8, linestyle="--"); ax.set_axisbelow(True)
     b0 = ax.bar(x - w/2, b_faith, w, label="BASELINE",  color=PALETTE_BASELINE,  alpha=0.9, zorder=3)
     b1 = ax.bar(x + w/2, o_faith, w, label="OPTIMIZED", color=PALETTE_OPTIMIZED, alpha=0.9, zorder=3)
-    ax.set_title("Faithfulness Score by Category\n(higher is better)", fontsize=11, fontweight="bold")
-    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=8)
+    ax.set_title("Faithfulness Score by Category  (higher is better)",
+                 fontsize=13, fontweight="bold", pad=12)
+    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=9)
     ax.set_ylabel("Faithfulness Score"); ax.set_ylim(0, 1.15)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
-    ax.legend(fontsize=8)
+    ax.legend(fontsize=9)
     for bar in list(b0) + list(b1):
         h = bar.get_height()
         if h > 0.01:
             ax.text(bar.get_x() + bar.get_width()/2, h + 0.02, f"{h:.0%}",
-                    ha="center", va="bottom", fontsize=7, color="#333")
+                    ha="center", va="bottom", fontsize=8, color="#333")
+    _save_fig(fig, f"{prefix}_02_faithfulness_score.png")
 
-    # ── [0,2] Pie — Overall Outcome Distribution (OPTIMIZED) ─────────────────
-    ax = axes[0, 2]
-    pie_vals    = [n_grounded, n_blocked, n_other]
-    pie_labels  = ["Grounded", "Blocked", "Other / Error"]
-    pie_colors  = [PALETTE_GOOD, PALETTE_WARN, PALETTE_BAD]
-    pie_vals_f  = [v for v, _ in zip(pie_vals,  pie_labels) if v > 0]
-    pie_labels_f= [l for v, l in zip(pie_vals,  pie_labels) if v > 0]
-    pie_colors_f= [c for v, c in zip(pie_vals,  pie_colors) if v > 0]
-    wedges, texts, autotexts = ax.pie(
-        pie_vals_f, labels=None, colors=pie_colors_f,
+    # ── Chart 3: Query Outcome Distribution (Pie) ─────────────────────────────
+    fig, ax = plt.subplots(figsize=(7, 7))
+    fig.patch.set_facecolor(BG_COLOR); ax.set_facecolor(BG_COLOR)
+    pie_vals   = [n_grounded, n_blocked, n_other]
+    pie_labels = ["Grounded", "Blocked", "Other / Error"]
+    pie_colors = [PALETTE_GOOD, PALETTE_WARN, PALETTE_BAD]
+    fv = [(v, l, c) for v, l, c in zip(pie_vals, pie_labels, pie_colors) if v > 0]
+    wedges, _, autotexts = ax.pie(
+        [v for v,_,_ in fv], labels=None, colors=[c for _,_,c in fv],
         autopct="%1.1f%%", startangle=140,
-        wedgeprops={"edgecolor": "white", "linewidth": 1.5},
-        textprops={"fontsize": 9}
+        wedgeprops={"edgecolor": "white", "linewidth": 2},
+        textprops={"fontsize": 11}
     )
     for at in autotexts:
-        at.set_fontsize(9); at.set_fontweight("bold"); at.set_color("white")
-    ax.legend(
-        wedges, [f"{l} ({v})" for l, v in zip(pie_labels_f, pie_vals_f)],
-        loc="lower center", bbox_to_anchor=(0.5, -0.18), fontsize=8, ncol=1
-    )
-    ax.set_title("Query Outcome Distribution\n(OPTIMIZED pipeline)", fontsize=11, fontweight="bold")
+        at.set_fontsize(11); at.set_fontweight("bold"); at.set_color("white")
+    ax.legend(wedges, [f"{l} ({v})" for v,l,_ in fv],
+              loc="lower center", bbox_to_anchor=(0.5, -0.12), fontsize=10)
+    ax.set_title("Query Outcome Distribution\n(OPTIMIZED pipeline)",
+                 fontsize=13, fontweight="bold", pad=14)
+    _save_fig(fig, f"{prefix}_03_outcome_distribution.png")
 
-    # ── [1,0] Average Latency by Category ────────────────────────────────────
-    ax = axes[1, 0]
+    # ── Chart 4: Average Latency by Category ─────────────────────────────────
+    fig, ax = plt.subplots(figsize=(10, 6))
+    fig.patch.set_facecolor(BG_COLOR); ax.set_facecolor(BG_COLOR)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.yaxis.grid(True, color=GRID_COLOR, linewidth=0.8, linestyle="--"); ax.set_axisbelow(True)
     b0 = ax.bar(x - w/2, b_lat, w, label="BASELINE",  color=PALETTE_BASELINE,  alpha=0.9, zorder=3)
     b1 = ax.bar(x + w/2, o_lat, w, label="OPTIMIZED", color=PALETTE_OPTIMIZED, alpha=0.9, zorder=3)
-    ax.set_title("Average Latency by Category (s)\n(lower is better)", fontsize=11, fontweight="bold")
-    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=8)
+    ax.set_title("Average Latency by Category  (lower is better)",
+                 fontsize=13, fontweight="bold", pad=12)
+    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=9)
     ax.set_ylabel("Seconds")
-    ax.legend(fontsize=8)
+    ax.legend(fontsize=9)
     for bar in list(b0) + list(b1):
         h = bar.get_height()
         if h > 0:
             ax.text(bar.get_x() + bar.get_width()/2, h + 0.01, f"{h:.2f}s",
-                    ha="center", va="bottom", fontsize=7, color="#333")
+                    ha="center", va="bottom", fontsize=8, color="#333")
+    _save_fig(fig, f"{prefix}_04_latency.png")
 
-    # ── [1,1] Block Rate by Category (OPTIMIZED) ─────────────────────────────
-    ax = axes[1, 1]
+    # ── Chart 5: Block Rate by Category ──────────────────────────────────────
+    fig, ax = plt.subplots(figsize=(10, 6))
+    fig.patch.set_facecolor(BG_COLOR); ax.set_facecolor(BG_COLOR)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.yaxis.grid(True, color=GRID_COLOR, linewidth=0.8, linestyle="--"); ax.set_axisbelow(True)
     bar_colors = [PALETTE_GOOD if v >= 0.8 else PALETTE_WARN if v >= 0.4 else PALETTE_BAD
                   for v in o_block_rate]
     bars = ax.bar(x, o_block_rate, 0.55, color=bar_colors, alpha=0.9, zorder=3)
-    ax.set_title("Block Rate by Category\n(OPTIMIZED — advisory/fabricated should be ~100%)",
-                 fontsize=11, fontweight="bold")
-    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=8)
+    ax.set_title("Block Rate by Category  (OPTIMIZED — advisory/fabricated should be ~100%)",
+                 fontsize=13, fontweight="bold", pad=12)
+    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=9)
     ax.set_ylabel("Block Rate"); ax.set_ylim(0, 1.15)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
     for bar in bars:
         h = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2, h + 0.02, f"{h:.0%}",
-                ha="center", va="bottom", fontsize=8, fontweight="bold", color="#333")
-    patches = [
+                ha="center", va="bottom", fontsize=9, fontweight="bold", color="#333")
+    legend_patches = [
         mpatches.Patch(color=PALETTE_GOOD, label="≥ 80% (Strong)"),
         mpatches.Patch(color=PALETTE_WARN, label="40–79% (Moderate)"),
         mpatches.Patch(color=PALETTE_BAD,  label="< 40% (Weak)"),
     ]
-    ax.legend(handles=patches, fontsize=7, loc="upper right")
+    ax.legend(handles=legend_patches, fontsize=9, loc="upper right")
+    _save_fig(fig, f"{prefix}_05_block_rate.png")
 
-    # ── [1,2] Pie — Block Reason Breakdown (OPTIMIZED) ───────────────────────
-    ax = axes[1, 2]
+    # ── Chart 6: Block Reason Breakdown (Pie) ────────────────────────────────
+    fig, ax = plt.subplots(figsize=(7, 7))
+    fig.patch.set_facecolor(BG_COLOR); ax.set_facecolor(BG_COLOR)
     if block_reasons:
         br_labels = list(block_reasons.keys())
         br_vals   = list(block_reasons.values())
@@ -802,26 +823,20 @@ def visualize_results(results: list, out_path: str = "benchmark_charts.png"):
             br_vals, labels=None, colors=br_colors,
             autopct=lambda p: f"{p:.1f}%" if p > 4 else "",
             startangle=90,
-            wedgeprops={"edgecolor": "white", "linewidth": 1.5},
+            wedgeprops={"edgecolor": "white", "linewidth": 2},
         )
         for at in autotexts2:
-            at.set_fontsize(8); at.set_fontweight("bold"); at.set_color("white")
-        ax.legend(
-            wedges2, [f"{l} ({v})" for l, v in zip(br_labels, br_vals)],
-            loc="lower center", bbox_to_anchor=(0.5, -0.32),
-            fontsize=7, ncol=1
-        )
+            at.set_fontsize(10); at.set_fontweight("bold"); at.set_color("white")
+        ax.legend(wedges2, [f"{l} ({v})" for l, v in zip(br_labels, br_vals)],
+                  loc="lower center", bbox_to_anchor=(0.5, -0.18), fontsize=9)
     else:
         ax.text(0.5, 0.5, "No blocks recorded", ha="center", va="center",
-                transform=ax.transAxes, fontsize=11, color="#999")
-    ax.set_title("Block Reason Breakdown\n(OPTIMIZED pipeline)", fontsize=11, fontweight="bold")
+                transform=ax.transAxes, fontsize=13, color="#999")
+    ax.set_title("Block Reason Breakdown\n(OPTIMIZED pipeline)",
+                 fontsize=13, fontweight="bold", pad=14)
+    _save_fig(fig, f"{prefix}_06_block_reasons.png")
 
-    # ── save ─────────────────────────────────────────────────────────────────
-    plt.tight_layout(pad=2.5)
-    plt.savefig(out_path, dpi=150, bbox_inches="tight", facecolor=BG_COLOR)
-    plt.close(fig)
-    log.info("Charts saved -> %s", out_path)
-    print(f"\n   Benchmark charts saved to: {out_path}\n")
+    print(f"\n  ✅  All 6 charts saved to: {base_dir}/\n")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
