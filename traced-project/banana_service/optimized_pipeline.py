@@ -16,14 +16,14 @@ class OptimizedBananaPipeline:
 
     def analyze(self, query):
 
-        # 1️⃣ Retrieve documents
+        #  Retrieve documents
         state = {"query": query}
         enriched_state = self.researcher_agent.run(state)
         docs = enriched_state.get("docs", [])
 
         context = "\n".join(docs)
 
-        # 2️⃣ Build prompt
+        #  Build prompt
         prompt = f"""
 You are a financial analyst.
 
@@ -41,13 +41,13 @@ Question:
 Provide grounded reasoning.
 """
 
-        # 3️⃣ Generate answer
+        #  Generate answer
         response = self.llm.generate(prompt)
 
-        # 4️⃣ Evaluate hallucination
+        #  Evaluate hallucination
         metrics = self.evaluator.evaluate(response, docs)
 
-        # 5️⃣ Return structured response
+        #  Return structured response
         return {
             "mode": "OPTIMIZED",
             "answer": response,

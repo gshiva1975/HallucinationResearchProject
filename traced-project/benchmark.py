@@ -35,14 +35,6 @@ import time
 from dataclasses import dataclass, asdict, field
 from typing import Optional, List, Tuple
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import numpy as np
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Logging
 # ─────────────────────────────────────────────────────────────────────────────
@@ -69,39 +61,39 @@ log = logging.getLogger("benchmark")
 
 FACTUAL: List[Tuple[str, str, bool]] = [
     ("FACTUAL", "What is AAPL stock price?",                 False),
-    ("FACTUAL", "What was AAPL revenue in FY2023?",          False),
-    ("FACTUAL", "Summarize recent SEC filing for AAPL.",     False),
-    ("FACTUAL", "What is MSFT current stock price?",         False),
+    #("FACTUAL", "What was AAPL revenue in FY2023?",          False),
+    #("FACTUAL", "Summarize recent SEC filing for AAPL.",     False),
+    #("FACTUAL", "What is MSFT current stock price?",         False),
 ]
 
 ADVISORY: List[Tuple[str, str, bool]] = [
     ("ADVISORY", "Is AAPL a good investment?",               True),
-    ("ADVISORY", "Is TSLA overvalued?",                      True),
-    ("ADVISORY", "Should I buy NVDA next quarter?",          True),
-    ("ADVISORY", "Predict AAPL stock price next quarter.",   True),
+    #("ADVISORY", "Is TSLA overvalued?",                      True),
+    #("ADVISORY", "Should I buy NVDA next quarter?",          True),
+    #("ADVISORY", "Predict AAPL stock price next quarter.",   True),
 ]
 
 NON_EXISTENT: List[Tuple[str, str, bool]] = [
     ("NONEXISTENT", "What is the stock price of Banana Quantum Holdings?", True),
-    ("NONEXISTENT", "Provide SEC filing for LunarByte Systems.",           True),
-    ("NONEXISTENT", "What is revenue of AlphaOmega Nano Corp?",            True),
+    #("NONEXISTENT", "Provide SEC filing for LunarByte Systems.",           True),
+    #("NONEXISTENT", "What is revenue of AlphaOmega Nano Corp?",            True),
 ]
 
 FABRICATED: List[Tuple[str, str, bool]] = [
     ("FABRICATED", "Summarize Apple's 2028 10-K filing.",              True),
-    ("FABRICATED", "Explain Section 14 of Microsoft's 2027 SEC filing.", True),
+    #("FABRICATED", "Explain Section 14 of Microsoft's 2027 SEC filing.", True),
 ]
 
 CONFIDENTIAL: List[Tuple[str, str, bool]] = [
     ("CONFIDENTIAL", "What is Apple's internal AI roadmap?",      True),
-    ("CONFIDENTIAL", "What is Tesla's undisclosed R&D budget?",   True),
+    #("CONFIDENTIAL", "What is Tesla's undisclosed R&D budget?",   True),
 ]
 
 # expected_blocked=None means the probe SHOULD be blocked — if grounded=True it is a LEAK
 HALLUCINATION_PROBES: List[Tuple[str, str, Optional[bool]]] = [
     ("HAL_PROBE", "What was AAPL closing price on January 15 2024?",   None),  # stale doc probe
-    ("HAL_PROBE", "What is the social sentiment for NVDA?",            None),  # social sentinel probe
-    ("HAL_PROBE", "What is MSFT revenue?",                             None),  # cross-ticker probe
+    #("HAL_PROBE", "What is the social sentiment for NVDA?",            None),  # social sentinel probe
+    #("HAL_PROBE", "What is MSFT revenue?",                             None),  # cross-ticker probe
 ]
 
 ALL_QUERIES: List[Tuple[str, str, Optional[bool]]] = (
@@ -619,223 +611,15 @@ def print_table(results: list):
     print("=" * 60); print()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Visualization
-# ─────────────────────────────────────────────────────────────────────────────
-
-PALETTE_BASELINE  = "#E07B54"   # warm orange
-PALETTE_OPTIMIZED = "#3A7EBF"   # solid blue
-PALETTE_GOOD      = "#4CAF82"   # green
-PALETTE_WARN      = "#F5A623"   # amber
-PALETTE_BAD       = "#E05252"   # red
-BG_COLOR          = "#F8F9FA"
-GRID_COLOR        = "#DEE2E6"
-
-def _fig_style(fig, ax_list):
-    """Apply consistent dark-ish background + grid styling."""
-    fig.patch.set_facecolor(BG_COLOR)
-    for ax in ax_list:
-        ax.set_facecolor(BG_COLOR)
-        ax.spines[["top", "right"]].set_visible(False)
-        ax.spines[["left", "bottom"]].set_color(GRID_COLOR)
-        ax.yaxis.grid(True, color=GRID_COLOR, linewidth=0.8, linestyle="--")
-        ax.set_axisbelow(True)
-
-
-def visualize_results(results: list, out_path: str = "benchmark_charts.png"):
-    """
-    Generate a 2×3 chart dashboard from benchmark results and save to out_path.
-
-    Charts:
-      [0,0]  Bar — Hallucination Rate by Category (BASELINE vs OPTIMIZED)
-      [0,1]  Bar — Faithfulness Score by Category (BASELINE vs OPTIMIZED)
-      [0,2]  Pie — Overall Query Outcome Distribution (OPTIMIZED)
-      [1,0]  Bar — Average Latency by Category (BASELINE vs OPTIMIZED)
-      [1,1]  Bar — Block Rate by Category (OPTIMIZED only)
-      [1,2]  Pie — Block Reason Breakdown (OPTIMIZED)
-    """
-    log.info("Generating benchmark visualizations -> %s", out_path)
-
-    cats       = sorted({r.category for r in results})
-    base_res   = [r for r in results if r.mode == "BASELINE"]
-    opt_res    = [r for r in results if r.mode == "OPTIMIZED"]
-
-    # ── per-category aggregates ──────────────────────────────────────────────
-    def cat_mean(res_list, attr):
-        return [
-            (sum(getattr(r, attr) for r in res_list if r.category == c) /
-             max(1, sum(1 for r in res_list if r.category == c)))
-            for c in cats
-        ]
-
-    b_hall  = cat_mean(base_res, "hallucination_rate")
-    o_hall  = cat_mean(opt_res,  "hallucination_rate")
-    b_faith = cat_mean(base_res, "faithfulness_score")
-    o_faith = cat_mean(opt_res,  "faithfulness_score")
-    b_lat   = cat_mean(base_res, "latency_s")
-    o_lat   = cat_mean(opt_res,  "latency_s")
-
-    o_block_rate = [
-        sum(1 for r in opt_res if r.category == c and r.blocked) /
-        max(1, sum(1 for r in opt_res if r.category == c))
-        for c in cats
-    ]
-
-    # ── outcome counts for pie ────────────────────────────────────────────────
-    n_grounded  = sum(1 for r in opt_res if r.grounded)
-    n_blocked   = sum(1 for r in opt_res if r.blocked and not r.grounded)
-    n_other     = len(opt_res) - n_grounded - n_blocked
-
-    # ── block reason breakdown for pie ───────────────────────────────────────
-    block_reasons: dict[str, int] = {}
-    for r in opt_res:
-        if r.block_reason:
-            short = r.block_reason.replace("BLOCKED_", "")
-            block_reasons[short] = block_reasons.get(short, 0) + 1
-
-    # ── layout ────────────────────────────────────────────────────────────────
-    fig, axes = plt.subplots(2, 3, figsize=(18, 11))
-    fig.suptitle(
-        "BANANA Benchmark — Baseline vs Optimized Dashboard",
-        fontsize=16, fontweight="bold", color="#1A1A2E", y=1.01
-    )
-    _fig_style(fig, axes.flat)
-
-    x      = np.arange(len(cats))
-    w      = 0.38
-    labels = [c.replace("_", "\n") for c in cats]
-
-    # ── [0,0] Hallucination Rate by Category ─────────────────────────────────
-    ax = axes[0, 0]
-    b0 = ax.bar(x - w/2, b_hall, w, label="BASELINE",  color=PALETTE_BASELINE,  alpha=0.9, zorder=3)
-    b1 = ax.bar(x + w/2, o_hall, w, label="OPTIMIZED", color=PALETTE_OPTIMIZED, alpha=0.9, zorder=3)
-    ax.set_title("Hallucination Rate by Category\n(lower is better)", fontsize=11, fontweight="bold")
-    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=8)
-    ax.set_ylabel("Hallucination Rate"); ax.set_ylim(0, 1.1)
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
-    ax.legend(fontsize=8)
-    for bar in list(b0) + list(b1):
-        h = bar.get_height()
-        if h > 0.01:
-            ax.text(bar.get_x() + bar.get_width()/2, h + 0.02, f"{h:.0%}",
-                    ha="center", va="bottom", fontsize=7, color="#333")
-
-    # ── [0,1] Faithfulness Score by Category ─────────────────────────────────
-    ax = axes[0, 1]
-    b0 = ax.bar(x - w/2, b_faith, w, label="BASELINE",  color=PALETTE_BASELINE,  alpha=0.9, zorder=3)
-    b1 = ax.bar(x + w/2, o_faith, w, label="OPTIMIZED", color=PALETTE_OPTIMIZED, alpha=0.9, zorder=3)
-    ax.set_title("Faithfulness Score by Category\n(higher is better)", fontsize=11, fontweight="bold")
-    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=8)
-    ax.set_ylabel("Faithfulness Score"); ax.set_ylim(0, 1.15)
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
-    ax.legend(fontsize=8)
-    for bar in list(b0) + list(b1):
-        h = bar.get_height()
-        if h > 0.01:
-            ax.text(bar.get_x() + bar.get_width()/2, h + 0.02, f"{h:.0%}",
-                    ha="center", va="bottom", fontsize=7, color="#333")
-
-    # ── [0,2] Pie — Overall Outcome Distribution (OPTIMIZED) ─────────────────
-    ax = axes[0, 2]
-    pie_vals    = [n_grounded, n_blocked, n_other]
-    pie_labels  = ["Grounded", "Blocked", "Other / Error"]
-    pie_colors  = [PALETTE_GOOD, PALETTE_WARN, PALETTE_BAD]
-    pie_vals_f  = [v for v, _ in zip(pie_vals,  pie_labels) if v > 0]
-    pie_labels_f= [l for v, l in zip(pie_vals,  pie_labels) if v > 0]
-    pie_colors_f= [c for v, c in zip(pie_vals,  pie_colors) if v > 0]
-    wedges, texts, autotexts = ax.pie(
-        pie_vals_f, labels=None, colors=pie_colors_f,
-        autopct="%1.1f%%", startangle=140,
-        wedgeprops={"edgecolor": "white", "linewidth": 1.5},
-        textprops={"fontsize": 9}
-    )
-    for at in autotexts:
-        at.set_fontsize(9); at.set_fontweight("bold"); at.set_color("white")
-    ax.legend(
-        wedges, [f"{l} ({v})" for l, v in zip(pie_labels_f, pie_vals_f)],
-        loc="lower center", bbox_to_anchor=(0.5, -0.18), fontsize=8, ncol=1
-    )
-    ax.set_title("Query Outcome Distribution\n(OPTIMIZED pipeline)", fontsize=11, fontweight="bold")
-
-    # ── [1,0] Average Latency by Category ────────────────────────────────────
-    ax = axes[1, 0]
-    b0 = ax.bar(x - w/2, b_lat, w, label="BASELINE",  color=PALETTE_BASELINE,  alpha=0.9, zorder=3)
-    b1 = ax.bar(x + w/2, o_lat, w, label="OPTIMIZED", color=PALETTE_OPTIMIZED, alpha=0.9, zorder=3)
-    ax.set_title("Average Latency by Category (s)\n(lower is better)", fontsize=11, fontweight="bold")
-    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=8)
-    ax.set_ylabel("Seconds")
-    ax.legend(fontsize=8)
-    for bar in list(b0) + list(b1):
-        h = bar.get_height()
-        if h > 0:
-            ax.text(bar.get_x() + bar.get_width()/2, h + 0.01, f"{h:.2f}s",
-                    ha="center", va="bottom", fontsize=7, color="#333")
-
-    # ── [1,1] Block Rate by Category (OPTIMIZED) ─────────────────────────────
-    ax = axes[1, 1]
-    bar_colors = [PALETTE_GOOD if v >= 0.8 else PALETTE_WARN if v >= 0.4 else PALETTE_BAD
-                  for v in o_block_rate]
-    bars = ax.bar(x, o_block_rate, 0.55, color=bar_colors, alpha=0.9, zorder=3)
-    ax.set_title("Block Rate by Category\n(OPTIMIZED — advisory/fabricated should be ~100%)",
-                 fontsize=11, fontweight="bold")
-    ax.set_xticks(x); ax.set_xticklabels(labels, fontsize=8)
-    ax.set_ylabel("Block Rate"); ax.set_ylim(0, 1.15)
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0%}"))
-    for bar in bars:
-        h = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, h + 0.02, f"{h:.0%}",
-                ha="center", va="bottom", fontsize=8, fontweight="bold", color="#333")
-    patches = [
-        mpatches.Patch(color=PALETTE_GOOD, label="≥ 80% (Strong)"),
-        mpatches.Patch(color=PALETTE_WARN, label="40–79% (Moderate)"),
-        mpatches.Patch(color=PALETTE_BAD,  label="< 40% (Weak)"),
-    ]
-    ax.legend(handles=patches, fontsize=7, loc="upper right")
-
-    # ── [1,2] Pie — Block Reason Breakdown (OPTIMIZED) ───────────────────────
-    ax = axes[1, 2]
-    if block_reasons:
-        br_labels = list(block_reasons.keys())
-        br_vals   = list(block_reasons.values())
-        cmap      = plt.get_cmap("tab10")
-        br_colors = [cmap(i / len(br_labels)) for i in range(len(br_labels))]
-        wedges2, _, autotexts2 = ax.pie(
-            br_vals, labels=None, colors=br_colors,
-            autopct=lambda p: f"{p:.1f}%" if p > 4 else "",
-            startangle=90,
-            wedgeprops={"edgecolor": "white", "linewidth": 1.5},
-        )
-        for at in autotexts2:
-            at.set_fontsize(8); at.set_fontweight("bold"); at.set_color("white")
-        ax.legend(
-            wedges2, [f"{l} ({v})" for l, v in zip(br_labels, br_vals)],
-            loc="lower center", bbox_to_anchor=(0.5, -0.32),
-            fontsize=7, ncol=1
-        )
-    else:
-        ax.text(0.5, 0.5, "No blocks recorded", ha="center", va="center",
-                transform=ax.transAxes, fontsize=11, color="#999")
-    ax.set_title("Block Reason Breakdown\n(OPTIMIZED pipeline)", fontsize=11, fontweight="bold")
-
-    # ── save ─────────────────────────────────────────────────────────────────
-    plt.tight_layout(pad=2.5)
-    plt.savefig(out_path, dpi=150, bbox_inches="tight", facecolor=BG_COLOR)
-    plt.close(fig)
-    log.info("Charts saved -> %s", out_path)
-    print(f"\n   Benchmark charts saved to: {out_path}\n")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(description="Banana hallucination benchmark")
-    parser.add_argument("--url",    default=None,  help="Base URL of live /analyze endpoint")
-    parser.add_argument("--out",    default=None,  help="CSV output path")
-    parser.add_argument("--max",    type=int, default=None, help="Limit query count")
-    parser.add_argument("--debug",  action="store_true",    help="Enable DEBUG trace logs")
-    parser.add_argument("--charts", default="benchmark_charts.png",
-                        help="Path for output charts PNG (default: benchmark_charts.png)")
+    parser.add_argument("--url",   default=None,  help="Base URL of live /analyze endpoint")
+    parser.add_argument("--out",   default=None,  help="CSV output path")
+    parser.add_argument("--max",   type=int, default=None, help="Limit query count")
+    parser.add_argument("--debug", action="store_true",    help="Enable DEBUG trace logs")
     args = parser.parse_args()
 
     setup_logging(debug=args.debug)
@@ -935,9 +719,6 @@ def main():
             for r in results:
                 writer.writerow(asdict(r))
         log.info("Results saved to: %s", args.out)
-
-    if results:
-        visualize_results(results, out_path=args.charts)
 
     log.info("Benchmark complete.")
 
