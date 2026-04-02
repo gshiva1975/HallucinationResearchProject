@@ -28,6 +28,8 @@ A production-grade Retrieval-Augmented Generation (RAG) system for grounded fina
 The system is built around three layers:
 
 ```
+<img width="887" height="459" alt="Screenshot 2026-04-02 at 1 39 52 PM" src="https://github.com/user-attachments/assets/1e96f2ae-dd71-4c01-853b-e8cd64792bbb" />
+
 ┌─────────────────────────────────────────────────────┐
 │  Outer Peel — MCP Data Sources                      │
 │  banana-market (Alpha Vantage)                      │
