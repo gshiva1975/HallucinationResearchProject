@@ -25,4 +25,5 @@ It integrates real market data (Alpha Vantage), social sentiment, and SEC filing
 it is a scalable, production-style agentic platform.
 
 ---
+<img width="887" height="459" alt="Screenshot 2026-04-02 at 1 39 52 PM" src="https://github.com/user-attachments/assets/30b65874-024e-4d45-bccd-31508ab74b7c" />
 
