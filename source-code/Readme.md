@@ -60,59 +60,106 @@ Four microservices run as independent Kubernetes pods:
 
 ```
 .
-├── banana_service/                  # Main application package
-│   ├── main.py                      # FastAPI app + LangGraph graph + all pipeline nodes
-│   ├── baseline_model.py            # Plain LLM pipeline (BASELINE experiment mode)
-│   ├── optimized_pipeline.py        # RAG pipeline without LangGraph (legacy)
-│   ├── logger.py                    # Structured logging setup
+├── banana_service/                      # Main application package
+│   ├── __init__.py
+│   ├── main.py                          # FastAPI app + LangGraph graph + all 11 pipeline nodes
+│   ├── baseline_model.py                # Plain LLM pipeline (BASELINE experiment mode)
+│   ├── optimized_pipeline.py            # RAG pipeline without LangGraph (legacy)
+│   ├── llm.py                           # LocalLlamaLLM wrapper — TinyLlama on MPS/CUDA/CPU
+│   ├── config.py                        # Settings class — env vars, thresholds, entity registry
+│   ├── service.py                       # Service entrypoint / health check wrapper
+│   ├── test_llama.py                    # Smoke test for LLM loading and generation
+│   │
 │   ├── agents/
-│   │   ├── analyst.py               # FinBERT sentiment agent (AnalystAgent)
-│   │   ├── reflection.py            # Confidence gate agent (ReflectionAgent)
-│   │   ├── scribe.py                # Report formatter (ScribeAgent)
-│   │   ├── researcher.py            # MCP fetch + vector retrieval (benchmark use)
-│   │   └── orchestrator.py          # Unused — logic absorbed into main.py
+│   │   ├── __init__.py
+│   │   ├── analyst.py                   # FinBERT sentiment agent (AnalystAgent)
+│   │   ├── reflection.py                # Confidence gate agent (ReflectionAgent)
+│   │   ├── scribe.py                    # Structured report formatter (ScribeAgent)
+│   │   ├── researcher.py                # MCP fetch + vector retrieval (used by benchmark)
+│   │   └── orchestrator.py              # Unused — logic absorbed into main.py
+│   │
 │   ├── core/
-│   │   ├── embedding_model.py       # Sentence transformer wrapper (all-MiniLM-L6-v2)
-│   │   └── vector_store.py          # In-memory FAISS vector store (benchmark use)
+│   │   ├── __init__.py
+│   │   ├── embedding_model.py           # Sentence transformer wrapper (all-MiniLM-L6-v2)
+│   │   ├── financial_model.py           # Financial domain model utilities
+│   │   └── vector_store.py              # In-memory FAISS vector store (benchmark use)
+│   │
 │   ├── evaluation/
-│   │   └── hallucination.py         # Sentence-overlap hallucination metric
+│   │   ├── __init__.py
+│   │   └── hallucination.py             # Sentence-overlap hallucination metric
+│   │
 │   └── ingestion/
-│       └── mcp_client.py            # JSON-RPC 2.0 MCP client
+│       ├── __init__.py
+│       └── mcp_client.py                # JSON-RPC 2.0 MCP client
 │
-├── mcp_servers/                     # MCP server implementations
-│   ├── market_server.py             # Alpha Vantage TIME_SERIES_DAILY endpoint
-│   ├── sec_server.py                # SEC EDGAR public REST API
-│   └── social_server.py             # Social sentiment (placeholder / Twitter/X)
+├── mcp_servers/                         # MCP server implementations (one per data source)
+│   ├── __init__.py
+│   ├── base_mcp.py                      # Shared MCP server base class and request handling
+│   ├── market_server.py                 # Alpha Vantage TIME_SERIES_DAILY endpoint
+│   ├── sec_server.py                    # SEC EDGAR public REST API (ticker → CIK → filings)
+│   ├── social_server.py                 # Social sentiment — VADER + Twitter/X API v2
+│   ├── Dockerfile.market                # Container image for banana-market
+│   ├── Dockerfile.sec                   # Container image for banana-sec
+│   └── Dockerfile.social               # Container image for banana-social
 │
-├── db/                              # ChromaDB persistent storage (gitignored)
+├── db/
+│   └── chroma.sqlite3                   # ChromaDB persistent vector store (do not commit)
 │
-├── # Kubernetes manifests
-├── banana-api-deployment.yaml
-├── banana-api-service.yaml
+├── # ── Kubernetes manifests ──────────────────────────────────────────
+├── banana-api-deployment.yaml           # banana-api Deployment (2Gi / 500m)
+├── banana-api-service.yaml              # NodePort 30080 → pod 8000
 ├── banana-market-deployment.yaml
-├── banana-market-service.yaml
+├── banana-market-service.yaml           # ClusterIP → pod 8003
 ├── banana-sec-deployment.yaml
-├── banana-sec-service.yaml
+├── banana-sec-service.yaml              # ClusterIP → pod 8001
 ├── banana-social-deployment.yaml
-├── banana-social-service.yaml
-├── banana-configmap.yaml
+├── banana-social-service.yaml           # ClusterIP → pod 8003
+├── banana-configmap.yaml                # EXPERIMENT_MODE and MCP URLs
 │
-├── Dockerfile                       # banana-api container image
-├── docker-compose.yaml              # Local Docker alternative to Kubernetes
-├── deploy.sh                        # Full Minikube deployment automation
-├── requirements.txt                 # Python dependencies
+├── # ── Container / local run ────────────────────────────────────────
+├── Dockerfile                           # banana-api image (Python 3.12, installs requirements)
+├── docker-compose.yaml                  # Local alternative to Kubernetes
+├── deploy.sh                            # Full Minikube deploy automation script
+├── requirements.txt                     # Python dependencies
+├── logger.py                            # Structured logging configuration (root-level)
 │
-├── # Test and benchmark scripts
-├── test_service.py                  # Integration test suite (pipeline classification)
-├── test_service-sentiment.py        # FinBERT sentiment labeled dataset tests
-├── benchmark.py                     # BASELINE vs OPTIMIZED comparison benchmark
-├── benchmark_page.py                # Benchmark chart generation
-├── test_service_page.py             # Test service chart generation
+├── # ── Test scripts ─────────────────────────────────────────────────
+├── test_service.py                      # Integration tests — 17 pipeline queries, 6 categories
+├── test_service-sentiment.py            # FinBERT labeled dataset evaluation (49 samples)
+├── test_service_page.py                 # Generates test_01_*.png – test_06_*.png charts
+├── test_service.py.old                  # Previous version (kept for reference)
 │
-├── # Data and reports
-├── all-data.csv                     # Labeled FinBERT evaluation dataset
-├── output.txt                       # Latest run output log
-└── report.txt / report-mar8.txt     # Historical evaluation reports
+├── # ── Benchmark scripts ────────────────────────────────────────────
+├── benchmark.py                         # BASELINE vs OPTIMIZED comparison (36 runs)
+├── benchmark_page.py                    # Generates benchmark_01_*.png – benchmark_06_*.png
+├── benchmark.py.old                     # Previous version (kept for reference)
+│
+├── # ── Generated charts ─────────────────────────────────────────────
+├── benchmark_01_hallucination_rate.png
+├── benchmark_02_faithfulness_score.png
+├── benchmark_03_outcome_distribution.png
+├── benchmark_04_latency.png
+├── benchmark_05_block_rate.png
+├── benchmark_06_block_reasons.png
+├── benchmark_charts.png                 # Combined benchmark chart sheet
+├── test_01_outcome_distribution.png
+├── test_02_hallucination_probes.png
+├── test_03_key_metrics.png
+├── test_04_sentiment_accuracy.png
+├── test_05_sentiment_distribution.png
+├── test_06_sentiment_scored_vs_blocked.png
+├── test_service_charts.png              # Combined test chart sheet
+│
+├── # ── Data and reports ─────────────────────────────────────────────
+├── all-data.csv                         # Labeled FinBERT evaluation dataset (49 samples)
+├── output.txt                           # Latest pipeline run output log
+├── report.txt                           # Current evaluation report
+├── report-mar8.txt                      # March 8 evaluation report (historical)
+├── deploy-report.txt                    # Deployment run log
+├── test_report_sentiments.txt           # Sentiment test run output
+├── main.py.old                          # Previous main.py (kept for reference)
+│
+└── Readme.md                            # This file
 ```
 
 ---
@@ -570,5 +617,4 @@ Supported tickers (ENTITY_REGISTRY): `AAPL`, `MSFT`, `TSLA`, `NVDA`
 Supported document years: `2022`, `2023`, `2024`
 
 ---
-
 
