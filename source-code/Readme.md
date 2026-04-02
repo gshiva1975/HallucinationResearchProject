@@ -29,9 +29,6 @@ The system is built around three layers:
 
 ```
 
-
-
-
 ┌─────────────────────────────────────────────────────┐
 │  Outer Peel — MCP Data Sources                      │
 │  banana-market (Alpha Vantage)                      │
