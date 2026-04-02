@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: banana-config
-data:
-  EXPERIMENT_MODE: "OPTIMIZED"   # Options: BASELINE or OPTIMIZED
