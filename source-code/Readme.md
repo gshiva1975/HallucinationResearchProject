@@ -31,24 +31,6 @@ The system is built around three layers:
 
 
 
-<img width="887" height="459" alt="Screenshot 2026-04-02 at 1 39 52 PM" src="https://github.com/user-attachments/assets/ff55c7bc-15bb-4758-8eb4-4f9a4cc5e88c" />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ┌─────────────────────────────────────────────────────┐
 │  Outer Peel — MCP Data Sources                      │
