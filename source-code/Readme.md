@@ -570,6 +570,4 @@ Supported document years: `2022`, `2023`, `2024`
 
 ---
 
-## License
 
-Academic project — CCE, IISc. Not licensed for commercial use.
