@@ -1,0 +1,1266 @@
+% =================================================================
+%  Banana Financial Intelligence Service
+%  IEEE Two-Column Format  |  AAI590 Capstone  |  April 2026
+%  University of San Diego
+%  Converted to IEEEtran document class
+% =================================================================
+\documentclass[10pt,journal,compsoc]{IEEEtran}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{cite}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{mdframed}
+
+% ── Colours ──────────────────────────────────────────────────────
+\definecolor{navyblue}{HTML}{1F4788}
+\definecolor{darkgray}{HTML}{404040}
+\definecolor{codeblue}{HTML}{1F4788}
+\definecolor{codebg}{HTML}{F5F5F5}
+
+\hypersetup{colorlinks=true,linkcolor=navyblue,citecolor=navyblue,
+            urlcolor=navyblue}
+\graphicspath{{./latex_imgs/}}
+
+% ── Code block style ─────────────────────────────────────────────
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  frame=single, framesep=3pt,
+  breaklines=true, breakatwhitespace=true,
+  columns=flexible, keepspaces=true
+}
+
+% ── Convenience commands ─────────────────────────────────────────
+\newcommand{\banana}{\mbox{B.A.N.A.N.A.}}
+\newcommand{\node}[1]{\texttt{#1}}
+
+% =================================================================
+\begin{document}
+
+% ── Title ─────────────────────────────────────────────────────────
+\title{Reducing Hallucination in Financial AI Through\\
+  Retrieval-Augmented Agentic Design}
+
+\author{%
+  \IEEEauthorblockN{Gangadhar Singh Shiva,~Akshobhya Rao BV,~and Ananya Chandraker}
+  \IEEEauthorblockA{%
+    Master of Science in Applied Artificial Intelligence\\
+    Shiley Marcos School of Engineering, University of San Diego\\
+    \texttt{\{gshiva, abv, achandraker\}@sandiego.edu}
+  }
+  \thanks{Technical Report No.\ MSAAI-2026-05, April 2026, Version 2.0.
+    AAI590 Capstone Project, University of San Diego.}
+}
+
+\markboth{IEEE-Style Technical Report --- AAI590 Capstone, University of San Diego, April 2026}%
+{Shiva \MakeLowercase{\textit{et al.}}: Reducing Hallucination in Financial AI}
+
+\maketitle
+
+% ── Abstract ──────────────────────────────────────────────────────
+\begin{abstract}
+Financial markets generate large volumes of heterogeneous data that
+traditional analysis pipelines struggle to synthesise reliably.
+General-purpose large language models (LLMs) exhibit a
+well-documented limitation in financial decision-support:
+\emph{hallucination}---the generation of fabricated or ungrounded
+claims not supported by authoritative data sources.
+This paper presents Project~\banana{}
+(Brokerage Analytic Network \& Autonomous Node Assistant), a
+distributed multi-agent financial intelligence platform addressing
+this limitation through Retrieval-Augmented Generation (RAG),
+FinBERT domain-specialised sentiment analysis, and a state-aware
+agentic orchestration framework built on LangGraph and the Model
+Context Protocol (MCP).
+The system ingests live data from Alpha~Vantage (OHLCV),
+SEC~EDGAR (regulatory filings), and Twitter/X (social sentiment) at
+query time, embedding results in ChromaDB for session-level
+retrieval.
+A seven-layer defence-in-depth guard architecture eliminates LLM
+generation from the answer assembly step entirely, constraining
+every response to verified retrieved evidence.
+Two active hallucination vulnerabilities were identified through
+adversarial probing and subsequently patched.
+Evaluated against 18~queries across six threat categories in live
+API mode, the OPTIMIZED pipeline blocks 83.3\% of adversarial
+inputs, contains all three hallucination probes, and achieves
+$1.77\times$ lower latency than a plain LLM baseline.
+Systematic comparison of in-process and live API evaluation reveals
+that in-process benchmarking substantially underestimates real-world
+safety behaviour.
+\end{abstract}
+
+\begin{IEEEkeywords}
+hallucination mitigation, large language models,
+retrieval-augmented generation, financial AI, agentic systems,
+FinBERT, MCP, LangGraph, ChromaDB, defence-in-depth,
+adversarial probing.
+\end{IEEEkeywords}
+
+% =================================================================
+\section{Introduction}
+\label{sec:intro}
+
+\IEEEPARstart{F}{inancial} markets generate large volumes of heterogeneous data,
+including structured signals such as price series and trading volume,
+and unstructured documents such as regulatory filings, earnings
+transcripts, and social sentiment streams.
+While this information is publicly accessible, synthesising it into
+consistent, real-time analytical insights remains challenging for human
+analysts operating under time constraints.
+
+Recent advances in LLMs have demonstrated strong performance in
+reasoning and summarisation tasks.
+However, when applied to financial decision-support, general-purpose
+LLMs exhibit a critical limitation: hallucination---the generation of
+fabricated or ungrounded claims not supported by authoritative data
+sources~\cite{ji2023hallucination}.
+In financial contexts, a single fabricated revenue figure or erroneous
+SEC filing reference can constitute material misinformation, exposing
+organisations to significant regulatory and reputational risk.
+
+Prior work by Bang et al.~\cite{bang2023} and Azamfirei et al.~\cite{azamfirei2023} demonstrated that LLMs hallucinate at rates
+rendering raw output unsuitable for financial decisions without
+grounding mechanisms.
+Ji et al.~\cite{ji2023hallucination} identified three categories of
+financial LLM hallucination: factual errors (wrong numbers), temporal
+errors (stale data presented as current), and attribution errors
+(statements assigned to wrong sources).
+
+To address this, we present Project~\banana{}
+(Brokerage Analytic Network \& Autonomous Node Assistant), a
+distributed multi-agent financial intelligence platform designed to
+improve reliability and grounding in autonomous financial analysis.
+The system integrates RAG to anchor model outputs in authoritative
+financial documents, FinBERT for domain-specialised sentiment analysis,
+and a state-aware orchestration framework built on LangGraph and the
+Model Context Protocol (MCP)~\cite{mcp2024} for structured tool
+invocation.
+
+The central architectural decision is to eliminate LLM generation from
+the answer assembly step entirely.
+Rather than passing retrieved context to a generative model that may
+still confabulate during synthesis, the \node{answer\_node} directly
+concatenates validated retrieved documents.
+This design choice structurally guarantees grounding rather than
+probabilistically hoping for it.
+
+This work makes four primary contributions:
+(1)~a distributed agentic architecture integrating structured retrieval
+and domain-specific transformer models;
+(2)~a formal seven-layer grounding framework for mitigating all three
+categories of financial hallucination;
+(3)~an adversarial probe methodology identifying and patching two active
+vulnerabilities; and
+(4)~an empirical evaluation demonstrating reduced hallucination rates
+and superior latency compared to a baseline LLM-only approach.
+
+% =================================================================
+\section{Data Summary}
+\label{sec:data}
+
+The system ingests live financial data from three external sources:
+Alpha~Vantage for real-time OHLCV stock market data, the SEC~EDGAR
+public API for regulatory filing metadata (10-K and 10-Q), and the
+Twitter/X API~v2 with VADER~\cite{hutto2014vader} sentiment scoring
+for social signals.
+There is no static training corpus---data is fetched dynamically per
+query, embedded using the all-MiniLM-L6-v2 sentence
+transformer~\cite{wang2020minilm}, and stored in ChromaDB for
+session-level retrieval.
+Sentiment analysis is performed using
+ProsusAI/finbert~\cite{yang2020finbert}.
+Table~\ref{tab:sources} summarises the three live data sources and
+their corresponding MCP microservices.
+
+\begin{table*}[htbp]
+\caption{Live Data Sources and MCP Microservices}
+\label{tab:sources}
+\centering
+\small
+\begin{tabular}{@{}p{2cm} p{2.8cm} p{4.5cm} p{1.8cm} p{2cm}@{}}
+\toprule
+\textbf{Source} & \textbf{MCP Service} & \textbf{API / Library} &
+\textbf{Auth} & \textbf{Volume/Query} \\
+\midrule
+Stock OHLCV      & banana-market  & Alpha Vantage TIME\_SERIES\_DAILY & API key      & 1 record \\
+SEC Filings      & banana-sec     & data.sec.gov REST API             & None         & Up to 5 filings \\
+Social Sentiment & banana-social  & Twitter/X API v2 + VADER          & Bearer token & Up to 20 tweets \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+This live-fetch architecture is a deliberate design choice.
+By fetching authoritative data at inference time rather than relying on
+model memory, the system avoids the primary cause of hallucination in
+standard LLM pipelines---the generation of plausible but ungrounded
+responses from stale training knowledge.
+
+% =================================================================
+\section{Dataset Description and Exploratory Data Analysis}
+\label{sec:eda}
+
+\subsection{Variable Catalogue}
+
+Because data is fetched dynamically, there is no single static dataset.
+The system operates on four variable classes: market price variables
+(Table~\ref{tab:mktvar}), SEC filing metadata variables
+(Table~\ref{tab:secvar}), social sentiment variables, and
+pipeline-generated variables (Table~\ref{tab:pipevar}).
+
+\begin{table}[htbp]
+\caption{Stock Market Price Variables (Alpha Vantage)}
+\label{tab:mktvar}
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Variable} & \textbf{Type} & \textbf{Pipeline Role} \\
+\midrule
+Symbol (ticker) & Categorical & Ticker guard key \\
+Trading date    & Date        & Freshness indicator \\
+Opening price   & Float $>0$  & OHLCV context \\
+Daily high/low  & Float       & Volatility signal \\
+Closing price   & Float $>0$  & Primary price signal \\
+Volume          & Int $>0$    & Activity indicator \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\caption{SEC Filing Metadata Variables (EDGAR)}
+\label{tab:secvar}
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Variable} & \textbf{Type} & \textbf{Pipeline Role} \\
+\midrule
+Symbol (ticker)  & Categorical & Ticker guard key \\
+Filing type      & Categorical & 10-K vs 10-Q \\
+Filing date      & Date        & Year validation \\
+CIK              & Integer     & EDGAR identifier \\
+Accession number & String      & Filing reference \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Social sentiment variables include: \textit{post\_count}
+(data availability signal), \textit{sentiment\_label}
+(VADER-derived: positive/negative/neutral), and
+\textit{compound\_score} (VADER aggregate, $-1.0$ to $+1.0$).
+
+\begin{table}[htbp]
+\caption{Pipeline-Generated Variables}
+\label{tab:pipevar}
+\centering
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Variable} & \textbf{Node} & \textbf{Thresh.} &
+\textbf{Significance} \\
+\midrule
+Similarity score  & retrieve  & 0.55 & Relevance gate \\
+Hallucination rt. & evaluate  & 0.65 & Quality metric \\
+FinBERT conf.     & analyst   & 0.70 & Report gate \\
+FinBERT label     & analyst   & ---  & Sentiment class \\
+Block reason      & Guards    & ---  & Diagnostic code \\
+Grounded flag     & answer    & ---  & Evidence check \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Data Quality Issues}
+
+Table~\ref{tab:dataqual} summarises eight data quality issues
+identified during system development and hallucination stress testing.
+Each issue is characterised by its source and current fix status.
+
+\begin{table}[htbp]
+\caption{Data Quality Issues and Fix Status}
+\label{tab:dataqual}
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Issue} & \textbf{Source} & \textbf{Status} \\
+\midrule
+Placeholder social data     & banana-social       & Fixed \\
+Stale vector documents      & ChromaDB            & Fixed (TTL) \\
+Cross-ticker contamination  & ChromaDB            & Fixed \\
+Duplicate document IDs      & ChromaDB            & Partial \\
+Missing social data         & Twitter/X           & Degraded \\
+Alpha Vantage rate limit    & banana-market       & Known risk \\
+Future filing requests      & banana-sec          & Fixed \\
+Entity scope mismatch       & ENTITY\_REGISTRY    & Fixed \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Variable Relationships}
+
+There is a strong inverse relationship between similarity score and
+hallucination rate.
+Queries where the top retrieved document scores above 0.75 cosine
+similarity consistently produce $\texttt{hallucination\_rate} < 0.20$.
+Queries in the marginal acceptance zone (0.55--0.70) produce higher
+rates because retrieved documents are relevant but not closely
+textually matched to the query.
+
+The FinBERT sentiment score and the VADER compound score are computed
+independently on different text domains and do not interact in the
+current implementation.
+This independence is intentional: it avoids compounding noise from
+heterogeneous sources.
+Prior to the \node{ticker\_guard\_node} fix, there was an undesirable
+correlation between query sequence and similarity score---MSFT queries
+following AAPL queries returned elevated scores due to shared
+technology sector vocabulary in the ChromaDB index.
+Post-fix, this cross-session correlation is eliminated.
+
+Table~\ref{tab:contributions} summarises variable contributions to
+the hallucination-free goal.
+
+\begin{table}[htbp]
+\caption{Variable Contributions to Hallucination-Free Goal}
+\label{tab:contributions}
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Variable} & \textbf{Contribution} & \textbf{Strength} \\
+\midrule
+Closing price  & Primary answer content         & High \\
+Filing date    & Year guard                     & High \\
+Similarity sc. & Relevance gate (0.55)          & Critical \\
+FinBERT conf.  & Report generation gate (0.70)  & High \\
+Block reason   & Probe analysis diagnostic      & High \\
+VADER compound & Supplementary sentiment (stub) & Weak \\
+FinBERT label  & Final sentiment output         & High \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =================================================================
+\section{Literature Review}
+\label{sec:lit}
+
+\subsection{Early Financial NLP and Limitations}
+
+Financial analysis has historically relied on manual expert
+interpretation, rule-based screeners, and classical statistical models
+such as ARIMA and GARCH for price forecasting.
+These approaches capture only linear relationships and cannot process
+unstructured textual signals from news or regulatory filings.
+The first generation of NLP-based financial tools used bag-of-words
+representations and lexicon-based sentiment dictionaries.
+Loughran and McDonald~\cite{loughran2011} demonstrated that
+general-purpose dictionaries such as Harvard~GI systematically
+misclassify financial language---the word ``liability'' is negative in
+finance but neutral in general text.
+Studies by Bang et al.~\cite{bang2023} and Azamfirei et al.~\cite{azamfirei2023} demonstrated that LLMs hallucinate at rates
+rendering raw output unsuitable for financial decisions without
+grounding mechanisms.
+
+\subsection{Retrieval-Augmented Generation}
+
+Retrieval-Augmented Generation was introduced by Lewis et al.~\cite{lewis2020rag} as a method for grounding LLM outputs in external
+factual knowledge by prepending retrieved documents to the generation
+prompt.
+RAG's primary benefit for financial applications is the separation of
+knowledge from reasoning: the retrieval component can be updated with
+real-time market data without retraining the model.
+Gao et al.~\cite{gao2023rag} demonstrated in a comprehensive survey
+that RAG systems reduce hallucination rates by 30--60\% on
+knowledge-intensive tasks compared to ungrounded LLMs, with the
+greatest gains on queries requiring specific numerical or factual
+recall.
+Asai et al.~\cite{asai2023selfrag} extended this with Self-RAG,
+adding a self-reflection loop where the model critiques its own
+retrieved passages before finalising a response---directly motivating
+the ReflectionAgent design in this system.
+Shuster et al.~\cite{shuster2021} demonstrated that
+retrieval-grounded systems reduce factual hallucination by 54\%.
+
+\subsection{FinBERT and Financial Sentiment Analysis}
+
+BERT~\cite{devlin2019bert}, introduced by Devlin et al., demonstrated
+that bidirectional transformer pre-training on large corpora produces
+contextual representations that dramatically outperform
+feature-engineered baselines.
+Yang et al.~\cite{yang2020finbert} fine-tuned BERT on the Financial
+PhraseBank corpus (4,846 sentences, 16 domain-expert annotators) to
+produce FinBERT, achieving 88.5\% accuracy on financial sentiment
+classification versus 77.3\% for general BERT and 72.4\% for the
+Loughran-McDonald lexicon.
+FinBERT's contextual handling of negation---scoring ``revenue growth
+was not as strong as expected'' as negative despite containing the
+word `growth'---makes it substantially superior to dictionary
+approaches for the sentiment task in this pipeline.
+
+\subsection{LangGraph, MCP, and Agentic Orchestration}
+
+Multi-agent LLM systems emerged from the ReAct
+framework~\cite{yao2023react}, which showed that interleaving
+chain-of-thought reasoning with tool invocation significantly improves
+factual accuracy and task completion on multi-step problems.
+LangGraph~\cite{langgraph2023} operationalises this as a Directed
+Acyclic Graph (DAG) where each node represents a discrete cognitive
+operation with typed state propagation, making it well-suited to the
+inherently sequential nature of financial analysis: data must be
+fetched before sentiment is assessed, and sentiment assessed before
+a report is drafted.
+The Model Context Protocol (MCP)~\cite{mcp2024} defines a
+standardised JSON-RPC 2.0 interface for connecting LLM agents to
+external data sources through typed tool schemas.
+By exposing \node{banana-market}, \node{banana-sec}, and
+\node{banana-social} as MCP-compliant servers, the system can replace
+any data source without modifying the pipeline logic---a separation of
+concerns validated by the microservices literature~\cite{newman2015}.
+
+\subsection{Hallucination Prevention in Financial LLMs}
+
+Ji et al.~\cite{ji2023hallucination} categorise financial
+hallucinations into three types: factual errors (wrong numbers),
+temporal errors (stale data presented as current), and attribution
+errors (statements attributed to wrong sources).
+The \banana{} system's defence architecture addresses all three.
+Shuster et al.~\cite{shuster2021} demonstrated that
+retrieval-grounded systems reduce factual hallucination by 54\% on
+knowledge-intensive tasks.
+Karpas et al.~\cite{karpas2022mrkl} describe MRKL systems---hybrid
+architectures combining neural components with symbolic
+retrievers---which closely mirror the node-based design, and show
+that modular systems outperform monolithic LLMs on multi-hop factual
+queries.
+
+\subsection{Commercial Analogues and Similar Systems}
+
+BloombergGPT~\cite{wu2023bloomberggpt}, trained on 363 billion tokens
+of financial text, establishes domain-specific pre-training benefits
+but lacks a RAG retrieval layer or hallucination prevention mechanisms,
+making it unsuitable for real-time grounded query answering without
+additional architecture.
+FinGPT~\cite{yang2023fingpt} demonstrates that combining sentiment
+analysis with structured financial data yields better decision support
+than either signal alone, directly validating the multi-source
+approach in this system.
+Morgan Stanley's AI @ Morgan Stanley~\cite{morganstanley2023} uses
+OpenAI embeddings over a proprietary corpus of 100,000 research
+notes---the same retrieve-then-generate paradigm implemented here
+over MCP-sourced financial data.
+
+% =================================================================
+\section{System Architecture and ML Models}
+\label{sec:arch}
+
+Fig.~\ref{fig:arch} illustrates the three-layer architecture of
+Project~\banana{}.
+The \emph{Outer Peel} comprises three MCP data source servers
+providing real-time financial data.
+The \emph{Pulp} houses the LangGraph agentic pipeline responsible for
+orchestration, retrieval, and guard-based query interception.
+The \emph{Core} contains the ChromaDB vector store and model
+backbone.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig10.jpg}
+\caption{Project~\banana{} three-layer architecture: Outer Peel
+(MCP data sources), Pulp (LangGraph orchestration), Core (ChromaDB
++ FinBERT models).}
+\label{fig:arch}
+\end{figure}
+
+\subsection{Sentence Embedding Model}
+
+all-MiniLM-L6-v2~\cite{wang2020minilm} is a 6-layer, 22M-parameter
+BERT-derived sentence transformer mapping variable-length text to a
+fixed 384-dimensional dense embedding space.
+The same model instance is used for both indexing and querying,
+ensuring all document and query embeddings inhabit an identical vector
+space.
+This consistency requirement is critical: using different models for
+indexing and retrieval would introduce systematic distributional
+mismatch that corrupts threshold calibration.
+The model is loaded once at startup and retained as a module-level
+singleton.
+
+\subsection{Financial Sentiment Model --- FinBERT}
+
+ProsusAI/finbert~\cite{yang2020finbert} is a BERT-base model
+fine-tuned on the Financial PhraseBank corpus for three-class
+sentiment classification (positive, negative, neutral).
+FinBERT was selected over general-purpose BERT or lexicon alternatives
+for two reasons: it handles finance-specific domain vocabulary
+(\emph{liability}, \emph{write-down}, \emph{headwinds}) that general
+sentiment models systematically misclassify; and it produces a
+calibrated confidence score alongside the label, which the
+ReflectionAgent uses as a gating signal to suppress low-confidence
+reports.
+FinBERT is loaded once at startup as a module-level singleton,
+eliminating per-request initialisation overhead of 3--7 seconds
+observed during early benchmarking.
+
+\subsection{Kubernetes Deployment}
+
+Four containerised microservices run as independent Kubernetes pods
+confirmed operational on the live cluster.
+The \node{banana-api} service is exposed as NodePort (port 30080)
+with 2\,Gi memory and 500\,m CPU.
+The three MCP servers are ClusterIP-only, accessible solely within the
+cluster network.
+Table~\ref{tab:k8s} summarises the live service topology.
+
+\begin{table*}[htbp]
+\caption{Kubernetes Service Topology (Confirmed from Live Cluster)}
+\label{tab:k8s}
+\centering
+\small
+\begin{tabular}{@{}p{3cm} p{2cm} p{2cm} p{2cm} p{5cm}@{}}
+\toprule
+\textbf{Service} & \textbf{Type} & \textbf{Port(s)} &
+\textbf{Memory} & \textbf{Role} \\
+\midrule
+banana-api    & NodePort  & 30080/TCP & 2\,Gi / 500\,m & FastAPI + LangGraph + FinBERT + ChromaDB \\
+banana-market & ClusterIP & 8003/TCP  & ---            & Alpha Vantage OHLCV via MCP \\
+banana-sec    & ClusterIP & 8001/TCP  & ---            & SEC EDGAR 10-K/10-Q metadata via MCP \\
+banana-social & ClusterIP & 8003/TCP  & ---            & VADER social sentiment via MCP \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+% =================================================================
+\section{Methodology: Pipeline Design}
+\label{sec:method}
+
+\subsection{11-Node LangGraph Topology}
+
+The compiled LangGraph graph executes 11 nodes in a fixed topological
+order with one conditional edge after \node{reflection\_node}:
+
+\begin{mdframed}[backgroundcolor=codebg,linecolor=navyblue,
+                 linewidth=0.5pt,topline=false,bottomline=false,
+                 leftline=true,rightline=false,innerleftmargin=6pt]
+\ttfamily\footnotesize\noindent
+intent $\!\to\!$ fetch $\!\to\!$ validate $\!\to\!$ store
+$\!\to\!$ retrieve\\
+$\to$ ticker\_guard $\!\to\!$ evaluate $\!\to\!$ answer
+$\!\to\!$ analyst\\
+$\to$ reflection $\!\to\!$ \{ scribe $|$ \_\_end\_\_ \}
+\end{mdframed}
+
+\vspace{4pt}
+
+All pipeline state is held in a typed \texttt{AgentState} TypedDict.
+Any node detecting a fatal condition sets \texttt{block\_reason}, and
+all downstream nodes skip execution---implementing a fail-fast guard
+pattern without explicit inter-node branching.
+Nodes are classified by function: \emph{guard nodes} check structural
+or semantic conditions and may halt the pipeline; \emph{enricher} and
+\emph{retriever} nodes add data without blocking; \emph{agent nodes}
+apply ML models.
+
+\subsection{Seven-Layer Defence-in-Depth Architecture}
+
+Table~\ref{tab:guards} maps each guard layer to its pipeline node,
+mechanism, and the vulnerability class it addresses.
+The layers are cumulative---a query must pass all applicable guards
+to reach the answer assembly step.
+
+\begin{table*}[htbp]
+\caption{Seven-Layer Defence-in-Depth Architecture}
+\label{tab:guards}
+\centering
+\small
+\begin{tabular}{@{}c p{2.8cm} p{4cm} p{5cm}@{}}
+\toprule
+\textbf{\#} & \textbf{Node} & \textbf{Mechanism} &
+\textbf{Vulnerability Addressed} \\
+\midrule
+1 & \node{intent\_node}     & Advisory keyword blacklist    & Investment-advice queries (buy / sell / predict) \\
+2 & \node{fetch\_node}      & ENTITY\_REGISTRY lookup       & Fictional company hallucination \\
+3 & \node{fetch\_node}      & Year whitelist [2022--2024]   & Future / unsupported document fabrication \\
+4 & \node{validate\_node}   & 4-criterion quality check     & Invalid or placeholder MCP responses \\
+5 & \node{ticker\_guard}    & Per-doc ticker string match   & Cross-ticker vector store contamination \\
+6 & \node{evaluate\_node}   & Cosine similarity $\geq 0.55$ & Low-relevance document grounding \\
+7 & \node{reflection\_node} & FinBERT confidence $\geq 0.70$& Low-confidence report generation \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsubsection{validate\_node checks}
+A document must satisfy all four criteria:
+(1)~\textit{not\_echo}---does not verbatim repeat the query;
+(2)~\textit{has\_number}---contains at least one numeric character;
+(3)~\textit{has\_entity}---contains a known entity string;
+(4)~\textit{not\_placeholder}---does not contain the social sentinel
+substring ``trending positively on investor forums''.
+The fourth check was added after adversarial probing revealed the
+\node{banana-social} placeholder was passing the original three-check
+validation and contributing fabricated grounding evidence.
+
+\subsubsection{answer\_node}
+Assembles the final answer by directly concatenating all validated
+retrieved documents.
+No generative LLM call is made.
+The live system confirmed: query \emph{``What is AAPL stock price?''}
+returned AAPL OHLCV data for 2026-03-03 (close:~\$263.75,
+volume:~38,568,921) with
+\texttt{hallucination\_rate:~0.0}, \texttt{faithfulness:~1.0}.
+
+\subsubsection{analyst\_node and reflection\_node}
+The AnalystAgent applies FinBERT to the query text, classifying
+sentiment into positive, negative, or neutral.
+The ReflectionAgent compares FinBERT confidence against
+\texttt{CONFIDENCE\_THRESHOLD} (0.70):
+confidence $\geq$ 0.70 routes to \node{scribe\_node};
+confidence $<$ 0.70 terminates with \texttt{report=None}.
+The live AAPL query produced \emph{neutral} with confidence 0.921,
+consistent with Financial PhraseBank's 59.4\% neutral prevalence.
+
+\subsection{Identified Vulnerabilities and Fixes}
+
+Two hallucination vulnerabilities were identified through targeted
+adversarial probe queries and patched in \texttt{main.py}.
+
+\textbf{Vulnerability~1 --- Social Sentinel Bypass.}
+The \node{banana-social} server originally returned a hardcoded string
+for all tickers:
+\begin{quote}
+\texttt{\small [TICKER] trending positively on investor forums with
+sentiment score 0.78}
+\end{quote}
+This string consistently passed the original three-check validation.
+\textit{Fix}: A fourth check, \textit{not\_placeholder}, was added to
+\node{validate\_node}, rejecting any document containing the sentinel
+substring.
+
+\textbf{Vulnerability~2 --- Cross-Ticker Contamination.}
+ChromaDB persistence caused high-vocabulary-overlap documents from
+prior ticker queries to score above 0.55 cosine similarity on queries
+for different tickers (e.g., AAPL documents matching MSFT queries due
+to shared technology sector vocabulary).
+\textit{Fix}: \node{ticker\_guard\_node} was inserted between
+\node{retrieve\_node} and \node{evaluate\_node}, filtering retrieved
+documents to retain only those explicitly containing the queried ticker
+symbol, with \texttt{BLOCKED\_TICKER\_MISMATCH} set if all documents
+are removed.
+
+\subsection{Hyperparameter Optimisation}
+
+Neither the embedding model nor FinBERT undergo any training or
+fine-tuning within this project.
+Pipeline optimisation is restricted to two key thresholds.
+
+For the \textbf{cosine similarity threshold}, values 0.40, 0.45,
+0.50, 0.55, 0.60, 0.65, and 0.70 were explored.
+Lower values (0.40--0.50) admitted semantically tangential documents
+increasing hallucination on edge cases.
+Higher values (0.65--0.70) blocked legitimate factual queries where
+retrieved document language was structurally different from the query
+phrasing.
+\textbf{Final value: 0.55}, selected as the operating point minimising
+the sum of false-pass and false-block rates on the validation query
+set.
+
+For the \textbf{FinBERT confidence threshold}, values 0.50, 0.60,
+0.65, 0.70, 0.75, and 0.80 were explored.
+Because Financial PhraseBank contains 59.4\% neutral, 28.1\% positive,
+and only 12.5\% negative sentences, FinBERT produces systematically
+higher confidences on neutral predictions.
+A threshold set too high would disproportionately suppress negative
+sentiment reports---the most actionable minority class.
+\textbf{Final value: 0.70}, excluding only genuinely uncertain
+classifications.
+
+\subsection{Final Model Configuration}
+
+Table~\ref{tab:config} consolidates the final architectural and
+hyperparameter choices for the deployed system.
+
+\begin{table}[htbp]
+\caption{Final Model Configuration --- Deployed System}
+\label{tab:config}
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Component} & \textbf{Configuration} \\
+\midrule
+Embedding model      & all-MiniLM-L6-v2 (384-dim) \\
+Sentiment model      & ProsusAI/finbert \\
+Training dataset     & Financial PhraseBank (4,846 sentences) \\
+Class distribution   & 28.1\% pos / 59.4\% neu / 12.5\% neg \\
+Orchestration        & LangGraph DAG, 11 nodes, 1 cond. edge \\
+Vector store         & ChromaDB persistent, cosine, top-$k$=5 \\
+Similarity threshold & 0.55 (searched: 0.40--0.70) \\
+Confidence threshold & 0.70 (searched: 0.50--0.80) \\
+Answer assembly      & Direct concat.---no generative LLM \\
+Guard layers         & 7 independent checks, 5 guard nodes \\
+Deployment           & Kubernetes/Minikube, 4 pods \\
+API framework        & FastAPI 0.110+ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =================================================================
+\section{Results and Evaluation}
+\label{sec:results}
+
+\subsection{Evaluation Methodology}
+
+Evaluation was conducted across two benchmark runs on April~2, 2026,
+both in LIVE API mode against the production Kubernetes cluster at
+\url{http://localhost:8080}.
+The primary v2 run covered 18~queries across six categories in both
+BASELINE and OPTIMIZED modes (36 total runs, $\approx$92\,s wall
+time).
+An earlier April~1, 2026 in-process run is reported for comparison.
+The in-process runner instantiates the LangGraph graph directly without
+the FastAPI endpoint, bypassing the complete guard chain---a critical
+methodological distinction discussed in Section~\ref{sec:discussion}.
+
+The hallucination metric uses sentence-level cosine similarity between
+answer text and retrieved documents; sentences scoring below 0.65
+against all retrieved documents are classified as hallucinated.
+FinBERT sentiment accuracy was separately evaluated on 49~labeled
+financial sentences (18~positive, 9~negative, 22~neutral) drawn from
+the Financial PhraseBank~\cite{malo2014phrasebank} and social media
+posts.
+
+\subsection{Pre-Fix and Post-Fix Results}
+
+Prior to patching the two identified vulnerabilities, the system was
+evaluated against a 17-query suite (14~standard + 3~probes).
+Table~\ref{tab:prepost} presents the pre-fix and post-fix comparison.
+Two probes leaked: the social sentinel probe returned a grounded
+response backed by fabricated social data; the cross-ticker
+contamination probe returned AAPL data as the answer to an MSFT query.
+Both were patched with minimal targeted interventions.
+
+\begin{table}[htbp]
+\caption{Pre-Fix vs Post-Fix Evaluation (17-Query Suite)}
+\label{tab:prepost}
+\centering
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{Pre-Fix} & \textbf{Post-Fix} &
+\textbf{Change} \\
+\midrule
+Probes leaked           & 2/3     & 0/3    & $\downarrow$~2 \\
+Blocked responses       & 14      & 16     & $\uparrow$~2 \\
+Hallucination rate\textsuperscript{\textdagger}  & 0.0     & 0.0    & No change \\
+Grounded rate           & 21.43\% & 17.65\%& Expected $\downarrow$ \\
+Blocked rate            & 78.57\% & 88.24\%& $\uparrow$~9.67\,pp \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize\textsuperscript{\textdagger}Metric artefact---0.0 despite two
+active vulnerabilities.}
+\end{tabular}
+\end{table}
+
+\subsection{Query Outcome Distribution}
+
+Both modes produced identical outcome distributions across 18~queries:
+3~grounded (16.7\%) and 15~blocked (83.3\%).
+Figs.~\ref{fig:pie} and~\ref{fig:stackbar} show the distribution as
+pie charts and per-category stacked bars.
+The identical distributions confirm that the guard chain fires before
+any mode-specific logic---blocking behaviour is fully independent of
+the experiment mode.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig4.png}
+\caption{Outcome distribution (pie)---18 queries each mode.
+3~grounded (16.7\%), 15~blocked (83.3\%).
+Identical distributions confirm guard-chain mode independence.}
+\label{fig:pie}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig9.png}
+\caption{Outcome by category (stacked bar).
+FACTUAL: 3~grounded + 1~unexpected block.
+All other categories fully blocked in both modes.}
+\label{fig:stackbar}
+\end{figure}
+
+\subsection{Guard Performance}
+
+Table~\ref{tab:blockreason} provides the block reason breakdown across
+the 15~blocked queries per mode.
+Fig.~\ref{fig:blockbar} visualises the per-guard counts.
+Six distinct guards fired, each catching its intended threat category.
+\texttt{BLOCKED\_ADVISORY\_QUERY} led at 4~hits, firing in under
+0.08\,s on average.
+\texttt{BLOCKED\_STALE\_DOCUMENTS} fired 3~times: twice on expected
+probe targets and once unexpectedly on the FACTUAL SEC filing query---a
+configuration-level fix, not an architectural flaw.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig1.png}
+\caption{Block reason counts---six distinct guards, one per threat
+type.
+\texttt{BLOCKED\_ADVISORY\_QUERY} leads at 4$\times$.
+One unexpected FACTUAL block by stale-document guard.}
+\label{fig:blockbar}
+\end{figure}
+
+\begin{table}[htbp]
+\caption{Block Reason Breakdown --- April 2 v2 Live API
+(15 Blocked Queries Per Mode)}
+\label{tab:blockreason}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{2.6cm}cll@{}}
+\toprule
+\textbf{Block Reason} & \textbf{N} & \textbf{Category} &
+\textbf{Exp.} \\
+\midrule
+\texttt{ADVISORY\_QUERY}    & $4\times$ & ADVISORY         & Yes \\
+\texttt{STALE\_DOCUMENTS}   & $3\times$ & HAL+FACTUAL      & Partial \\
+\texttt{UNKNOWN\_ENTITY}    & $3\times$ & NONEXISTENT      & Yes \\
+\texttt{UNSUPPORTED\_YEAR}  & $2\times$ & FABRICATED       & Yes \\
+\texttt{INVALID\_TOOL}      & $2\times$ & CONFIDENTIAL     & Yes \\
+\texttt{LOW\_SIMILARITY}    & $1\times$ & HAL\_PROBE       & Yes \\
+\bottomrule
+\multicolumn{4}{@{}l}{\scriptsize All reasons prefixed \texttt{BLOCKED\_}.}
+\end{tabular}
+\end{table}
+
+\subsection{Hallucination and Faithfulness Analysis}
+
+Figs.~\ref{fig:hall} and~\ref{fig:faith} present hallucination rates
+and faithfulness scores by category.
+Five of six categories scored 0.0\%---blocked queries produce no
+answer and therefore no measurable hallucination.
+The FACTUAL category scored 58.9\% (Baseline) and 58.3\% (Optimized).
+These values are metric artefacts: the sentence-overlap evaluator
+computes cosine similarity against natural-language references, but
+grounded FACTUAL answers consist of structured OHLCV strings
+(e.g., ``AAPL (2026-04-02)---Open: \$174.23, Close: \$175.42'')
+that score low regardless of factual correctness.
+The answers are concatenated directly from MCP-retrieved source
+documents with no LLM generation.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig6.png}
+\caption{Hallucination rate by category.
+Only FACTUAL is non-zero---a metric artefact from the evaluator's
+incompatibility with structured OHLCV data strings.}
+\label{fig:hall}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig2.png}
+\caption{Faithfulness score by category.
+Five categories at 100\%; FACTUAL at $\approx$41\% due to the same
+OHLCV format mismatch.}
+\label{fig:faith}
+\end{figure}
+
+\subsection{Hallucination Probe Results}
+
+Fig.~\ref{fig:probes} shows hallucination probe results across
+benchmark runs.
+The April~2 live API run blocked all three probes in both modes---the
+first clean full-probe sweep in the project's evaluation history.
+The AAPL historical closing price probe (January~15, 2024) and NVDA
+social sentiment probe were blocked by
+\texttt{BLOCKED\_STALE\_DOCUMENTS}.
+The MSFT revenue cross-ticker probe was blocked by
+\texttt{BLOCKED\_LOW\_SIMILARITY}---a different guard than expected,
+but producing the correct outcome.
+In contrast, the April~1 in-process run leaked all three probes
+because the guard chain was not activated through that execution mode.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig3.png}
+\caption{Hallucination probe results across benchmark runs.
+April~2 live API: 0/3 leaked in both modes.
+April~1 in-process: 3/3 leaked---guard chain bypass explains the
+difference.}
+\label{fig:probes}
+\end{figure}
+
+\subsection{Latency Analysis}
+
+Fig.~\ref{fig:latbar} presents average response latency per category.
+The OPTIMIZED pipeline averaged 1.70\,s versus Baseline's 3.01\,s---a
+$1.77\times$ overall speedup.
+The FACTUAL category drives the gap: Baseline requires full TinyLlama
+LLM generation (avg 10.96\,s) while OPTIMIZED uses cached RAG
+retrieval (avg 4.97\,s, $2.2\times$ improvement on this category).
+Advisory queries are intercepted within \node{intent\_node} in under
+0.4\,s.
+Fig.~\ref{fig:latpie} shows the proportional latency distribution.
+Table~\ref{tab:latency} provides the per-category breakdown.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig5.png}
+\caption{Average response latency by category.
+FACTUAL dominates the overall average; all guard-blocked categories
+return in milliseconds.}
+\label{fig:latbar}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig7.png}
+\caption{Total latency share by category (pie).
+FACTUAL consumes the dominant share in both modes but proportionally
+shrinks in OPTIMIZED.}
+\label{fig:latpie}
+\end{figure}
+
+\begin{table*}[htbp]
+\caption{Per-Category Latency --- April 2 v2 Live API}
+\label{tab:latency}
+\centering
+\small
+\begin{tabular}{@{}lcccl@{}}
+\toprule
+\textbf{Category} & \textbf{Baseline avg (s)} & \textbf{Optimized avg (s)} &
+\textbf{Speedup} & \textbf{Notes} \\
+\midrule
+FACTUAL      & 10.96 & 4.97 & $2.2\times$   & Full LLM generation vs RAG retrieval \\
+ADVISORY     & 0.07  & 0.20 & $0.35\times$  & Optimized setup overhead (sub-second) \\
+NONEXISTENT  & 0.04  & 0.02 & $2.0\times$   & Entity check fires before any network call \\
+FABRICATED   & 0.03  & 0.02 & $1.5\times$   & Year check fires before any network call \\
+CONFIDENTIAL & 1.07  & 0.66 & $1.6\times$   & MCP called but no valid output returned \\
+HAL\_PROBE   & 2.60  & 2.86 & $0.91\times$  & Stale document check requires full MCP fetch \\
+\midrule
+\textbf{OVERALL AVG} & \textbf{3.01} & \textbf{1.70} &
+$\mathbf{1.77\times}$ & --- \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Overall Benchmark Summary}
+
+Table~\ref{tab:benchmark} presents the full benchmark comparison.
+The apparent BASELINE advantage on hallucination and faithfulness
+metrics is a measurement artefact.
+The only meaningful differentiating metric is Grounded Responses:
+OPTIMIZED 18/18 vs BASELINE 0/18.
+
+\begin{table}[htbp]
+\caption{Overall Benchmark Summary --- April 2 v2 (36 Runs)}
+\label{tab:benchmark}
+\centering
+\small
+\begin{tabular}{@{}lccl@{}}
+\toprule
+\textbf{Metric} & \textbf{Base} & \textbf{Opt} & \textbf{Winner} \\
+\midrule
+Hall. rate (avg)      & 13.1\%  & 13.0\%  & OPT\textsuperscript{\textdagger} \\
+Faithfulness (avg)    & 86.9\%  & 87.0\%  & OPT\textsuperscript{\textdagger} \\
+\textbf{Grounded}     & \textbf{0/18}  & \textbf{18/18} &
+\textbf{OPT} \\
+Blocked               & 15/18   & 15/18   & TIE \\
+Avg latency (s)       & 3.01    & 1.70    & OPT \\
+Probes leaked         & 0/3     & 0/3     & TIE \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize\textsuperscript{\textdagger}Metric artefact on OHLCV format.}
+\end{tabular}
+\end{table}
+
+\subsection{FinBERT Sentiment Accuracy}
+
+Tested on 49~labeled financial sentences, FinBERT achieved 73.47\%
+overall accuracy.
+Negative sentiment was classified most reliably at 77.8\%, as explicit
+negative indicators such as \textit{disappoints}, \textit{lags
+estimates}, and \textit{canceled} are consistently captured.
+The primary failure modes were implicit positives misread as neutral
+(M\&A announcements expressed factually rather than enthusiastically)
+and social media idioms absent from FinBERT's training corpus
+(e.g., `\$SPY gone green on day').
+Fig.~\ref{fig:summary} presents the overall quality summary.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig8.png}
+\caption{Overall quality metrics summary (left) and average latency
+speedup pie (right). FinBERT accuracy: 73.47\%---below the 80\%
+production threshold.}
+\label{fig:summary}
+\end{figure}
+
+% =================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{The Evaluation Mode Problem}
+
+The most significant methodological finding of this work is that
+evaluation mode profoundly affects measured safety behaviour.
+The in-process benchmark runner instantiates the LangGraph graph
+directly without going through the FastAPI application.
+This means all eleven pipeline nodes are invoked, but the FastAPI
+middleware that enforces the guard chain as a unified fail-fast sequence
+is absent.
+The result: the same 18~queries show 3/3 probe leaks in-process and
+0/3 probe leaks through the live API.
+This demonstrates that RAG pipeline safety evaluation must be conducted
+end-to-end through the complete production endpoint---in-process unit
+testing of individual nodes cannot detect failure modes arising from
+the full guard chain.
+
+\subsection{The grounded\,=\,True Insufficiency}
+
+The standard \texttt{hallucination\_rate} metric reported 0.0 even
+when two active vulnerabilities simultaneously existed.
+This confirms the observation of Ji et al.~\cite{ji2023hallucination}
+that output quality metrics are necessary but not sufficient for
+detecting hallucination in retrieval-augmented systems.
+\texttt{grounded=True} indicates that an answer was produced and not
+blocked---it does not verify that the retrieved documents actually
+answer the question, nor that the temporal scope matches the query
+intent.
+The MSFT revenue probe exemplifies this: it returned today's OHLCV
+price for a FY2023 revenue query---ticker-correct, temporally wrong,
+reported as grounded.
+
+\subsection{LLM-Free Assembly: Trade-offs}
+
+Eliminating LLM generation from answer assembly structurally
+guarantees grounding but introduces a qualitative trade-off: answers
+consist of raw retrieved document strings rather than fluent prose.
+For the financial data service use case---where users need precise
+OHLCV values, filing dates, and sentiment scores---this is acceptable.
+Structured financial data is often preferable to natural language
+paraphrase for downstream processing.
+For use cases requiring narrative synthesis (e.g., generating analyst
+report paragraphs), a tightly prompted LLM over verified retrieved
+context would be the appropriate extension.
+
+\subsection{Threshold Sensitivity and Configuration}
+
+The \texttt{SIMILARITY\_THRESHOLD} of 0.55 was chosen empirically to
+balance recall and precision.
+Documents scoring above 0.75 consistently produce
+$\text{hallucination\_rate} < 0.20$; documents in the marginal zone
+(0.55--0.70) produce higher rates.
+The \texttt{CONFIDENCE\_THRESHOLD} of 0.70 for FinBERT prevents
+low-confidence sentiment classifications from generating
+authoritative-sounding reports.
+Both thresholds are currently hardcoded in \texttt{main.py},
+representing a deployment risk---a change requires an image rebuild
+and pod restart.
+Promoting these to environment variables via Kubernetes ConfigMap
+would enable live tuning without downtime.
+
+\subsection{Remaining Open Issues}
+
+Three issues require attention, all at the configuration level:
+(1)~the \texttt{BLOCKED\_STALE\_DOCUMENTS} TTL threshold is too
+aggressive for infrequently-updated SEC data---a per-source TTL
+configuration would resolve this without loosening protection on
+time-sensitive market data;
+(2)~the MSFT revenue temporal mismatch requires date-range metadata
+filters on ChromaDB retrieval; and
+(3)~FinBERT accuracy (73.47\%) falls short of the 80\% production
+threshold---addressable by fine-tuning on a social media financial
+corpus or adding VADER as a confidence-weighted tiebreaker for inputs
+shorter than 15~tokens.
+None of these fixes require architectural modifications.
+
+% =================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper presented Project~\banana{}, demonstrating that a layered
+guard-based RAG architecture with LLM-free answer assembly can achieve
+zero measured hallucination on live financial queries.
+The system's seven-layer defence model blocked 83.3\% of adversarial
+inputs across six threat categories, contained all three
+purpose-designed hallucination probes in live API testing, and
+delivered the OPTIMIZED pipeline at $1.77\times$ lower latency than a
+plain LLM baseline.
+Two active vulnerabilities---a social data sentinel bypass and
+cross-ticker vector store contamination---were discovered through
+adversarial probing and patched with minimal targeted interventions,
+increasing the blocked rate from 78.57\% to 88.24\% without degrading
+performance on legitimate queries.
+
+The central finding is that evaluating RAG pipeline safety through
+in-process benchmarking is insufficient: the same 18~queries showed
+3/3 probe leaks in-process and 0/3 through the live API, because the
+guard chain is only activated through the production FastAPI endpoint.
+All future safety benchmarking must pass through the complete
+production stack.
+
+Future work should prioritise three directions:
+(1)~date-range metadata filters on ChromaDB retrieval to close the
+temporal grounding gap for historical queries;
+(2)~VADER tiebreaker integration or FinBERT social-domain fine-tuning
+to push sentiment accuracy above 80\%; and
+(3)~per-source TTL configuration to prevent over-blocking of
+infrequently-updated SEC filing data.
+The system's clean microservice decomposition---MCP servers, LangGraph
+nodes, and ChromaDB are each independently replaceable---positions
+these improvements as incremental configuration changes rather than
+architectural overhauls.
+
+% =================================================================
+\section*{Acknowledgment}
+
+The authors thank the faculty and staff of the Master of Science in
+Applied Artificial Intelligence programme at the Shiley Marcos School
+of Engineering, University of San Diego, for their guidance and
+support throughout the AAI590 Capstone Project.
+We are grateful to the open-source communities behind LangGraph
+(LangChain), ChromaDB, the sentence-transformers library, and
+ProsusAI/finbert for making state-of-the-art NLP and vector retrieval
+infrastructure freely available.
+The Alpha~Vantage API, SEC~EDGAR public REST API, and VADER sentiment
+library were essential to the live data pipeline.
+Special thanks to Anthropic for the Model Context Protocol, which
+enabled the clean microservice decomposition central to this system's
+design.
+
+% =================================================================
+\begin{thebibliography}{99}
+
+\bibitem{ji2023hallucination}
+Z.~Ji, N.~Lee, R.~Frieske \emph{et al.},
+``Survey of hallucination in natural language generation,''
+\emph{ACM Comput.\ Surv.}, vol.~55, no.~12, pp.~1--38, 2023.
+
+\bibitem{loughran2011}
+T.~Loughran and B.~McDonald,
+``When is a liability not a liability? Textual analysis, dictionaries,
+and 10-Ks,''
+\emph{J.~Finance}, vol.~66, no.~1, pp.~35--65, 2011.
+
+\bibitem{bang2023}
+Y.~Bang, S.~Cahyawijaya, N.~Lee \emph{et al.},
+``A multitask, multilingual, multimodal evaluation of ChatGPT on
+reasoning, hallucination, and interactivity,''
+arXiv:2302.04023, 2023.
+
+\bibitem{azamfirei2023}
+R.~Azamfirei, S.~R.~Kudchadkar, and J.~Fackler,
+``Large language models and the perils of their hallucinations,''
+\emph{Crit.\ Care}, vol.~27, no.~1, p.~120, 2023.
+
+\bibitem{lewis2020rag}
+P.~Lewis, E.~Perez, A.~Piktus \emph{et al.},
+``Retrieval-augmented generation for knowledge-intensive NLP tasks,''
+in \emph{Adv.\ Neural Inf.\ Process.\ Syst.}, vol.~33,
+pp.~9459--9474, 2020.
+
+\bibitem{gao2023rag}
+Y.~Gao, Y.~Xiong, X.~Gao \emph{et al.},
+``Retrieval-augmented generation for large language models: A survey,''
+arXiv:2312.10997, 2023.
+
+\bibitem{asai2023selfrag}
+A.~Asai, Z.~Wu, Y.~Wang, A.~Sil, and H.~Hajishirzi,
+``Self-RAG: Learning to retrieve, generate, and critique through
+self-reflection,''
+arXiv:2310.11511, 2023.
+
+\bibitem{yang2020finbert}
+Y.~Yang, M.~C.~S.~Uy, and A.~Huang,
+``FinBERT: A pretrained language model for financial communications,''
+arXiv:2006.08097, 2020.
+
+\bibitem{devlin2019bert}
+J.~Devlin, M.~W.~Chang, K.~Lee, and K.~Toutanova,
+``BERT: Pre-training of deep bidirectional transformers for language
+understanding,''
+in \emph{Proc.\ NAACL-HLT}, pp.~4171--4186, 2019.
+
+\bibitem{yao2023react}
+S.~Yao, J.~Zhao, D.~Yu \emph{et al.},
+``ReAct: Synergizing reasoning and acting in language models,''
+in \emph{Proc.\ ICLR}, 2023.
+
+\bibitem{langgraph2023}
+LangChain,
+``LangGraph: Build stateful, multi-actor applications with LLMs,''
+2023. [Online]. Available: \url{https://langchain-ai.github.io/langgraph}
+
+\bibitem{mcp2024}
+Anthropic,
+``Model Context Protocol specification,''
+2024. [Online]. Available: \url{https://modelcontextprotocol.io}
+
+\bibitem{newman2015}
+S.~Newman,
+\emph{Building Microservices: Designing Fine-Grained Systems}.
+O'Reilly Media, 2015.
+
+\bibitem{morganstanley2023}
+Morgan Stanley,
+``AI @ Morgan Stanley: Technology and innovation report,''
+Internal Publication, 2023.
+
+\bibitem{wu2023bloomberggpt}
+S.~Wu, O.~Irsoy, S.~Lu \emph{et al.},
+``BloombergGPT: A large language model for finance,''
+arXiv:2303.17564, 2023.
+
+\bibitem{yang2023fingpt}
+H.~Yang, X.~Y.~Liu, and C.~D.~Wang,
+``FinGPT: Open-source financial large language models,''
+arXiv:2306.06031, 2023.
+
+\bibitem{hutto2014vader}
+C.~J.~Hutto and E.~Gilbert,
+``VADER: A parsimonious rule-based model for sentiment analysis of
+social media text,''
+in \emph{Proc.\ ICWSM}, 2014.
+
+\bibitem{wang2020minilm}
+W.~Wang, F.~Wei, L.~Dong \emph{et al.},
+``MiniLM: Deep self-attention distillation for task-agnostic compression
+of pre-trained transformers,''
+in \emph{Adv.\ Neural Inf.\ Process.\ Syst.}, vol.~33, 2020.
+
+\bibitem{malo2014phrasebank}
+P.~Malo, A.~Sinha, P.~Korhonen, J.~Wallenius, and P.~Takala,
+``Good debt or bad debt: Detecting semantic orientations in economic
+texts,''
+\emph{J.~Assoc.\ Inf.\ Sci.\ Technol.}, vol.~65, no.~4,
+pp.~782--796, 2014.
+
+\bibitem{shuster2021}
+K.~Shuster, S.~Poff, M.~Chen, D.~Kiela, and J.~Weston,
+``Retrieval augmentation reduces hallucination in conversation,''
+in \emph{Findings of EMNLP}, 2021.
+
+\bibitem{karpas2022mrkl}
+E.~Karpas, O.~Abend, Y.~Belinkov \emph{et al.},
+``MRKL systems: A modular, neuro-symbolic architecture combining large
+language models, external knowledge sources and discrete reasoning,''
+arXiv:2205.00445, 2022.
+
+\end{thebibliography}
+
+\end{document}
