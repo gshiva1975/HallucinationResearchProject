@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banana-sec
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: banana-sec
+  template:
+    metadata:
+      labels:
+        app: banana-sec
+    spec:
+      containers:
+        - name: banana-sec
+          image: banana-sec:v1
+          imagePullPolicy: Never        # use locally-built minikube image
+          ports:
+            - containerPort: 8001      # matches Dockerfile.sec EXPOSE 8001
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+            requests:
+              memory: "128Mi"
+              cpu: "100m"

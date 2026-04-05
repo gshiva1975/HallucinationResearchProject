@@ -1,0 +1,15 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --no-cache-dir fastapi uvicorn requests pydantic mcp \
+    nltk vaderSentiment
+
+# Download VADER lexicon at build time
+RUN python3 -c "import nltk; nltk.download('vader_lexicon', quiet=True)"
+
+EXPOSE 8003
+
+CMD ["uvicorn", "mcp_servers.social_server:app", "--host", "0.0.0.0", "--port", "8003"]

@@ -1,0 +1,1428 @@
+
+ Starting Hallucination Stress Test Suite
+
+================================================================================
+[c7f17ec7] Sending Query: What is AAPL stock price?
+================================================================================
+[c7f17ec7] Response Time: 9.72s
+[c7f17ec7] Status Code: 200
+
+--- Response ---
+{
+  "answer": "AAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38130053\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38130639\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38132735\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38143450\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38129836",
+  "grounded": true,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": 1.0,
+  "block_reason": null,
+  "tools_used": [
+    "market",
+    "sec",
+    "social"
+  ],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9211257100105286
+  },
+  "report": "\nFinancial Report:\n\nSentiment: neutral\nConfidence: 0.9211257100105286\n"
+}
+
+================================================================================
+[50593b07] Sending Query: What was AAPL revenue in FY2023?
+================================================================================
+[50593b07] Response Time: 7.358s
+[50593b07] Status Code: 200
+
+--- Response ---
+{
+  "answer": "AAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38130053\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38132735\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38143450\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38130639\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38143554",
+  "grounded": true,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": 1.0,
+  "block_reason": null,
+  "tools_used": [
+    "market",
+    "sec",
+    "social"
+  ],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9362185597419739
+  },
+  "report": "\nFinancial Report:\n\nSentiment: neutral\nConfidence: 0.9362185597419739\n"
+}
+
+================================================================================
+[398cb954] Sending Query: Summarize recent SEC filing for AAPL.
+================================================================================
+[398cb954] Response Time: 8.733s
+[398cb954] Status Code: 200
+
+--- Response ---
+{
+  "answer": "AAPL filed 10-Q on 2026-01-30. This filing may contain updated financial disclosures. AAPL filed 10-K on 2025-10-31. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-08-01. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-05-02. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-01-31. This filing may contain updated financial disclosures.\n\nAAPL filed 10-Q on 2026-01-30. This filing may contain updated financial disclosures. AAPL filed 10-K on 2025-10-31. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-08-01. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-05-02. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-01-31. This filing may contain updated financial disclosures.\n\nAAPL filed 10-Q on 2026-01-30. This filing may contain updated financial disclosures. AAPL filed 10-K on 2025-10-31. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-08-01. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-05-02. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-01-31. This filing may contain updated financial disclosures.\n\nAAPL filed 10-Q on 2026-01-30. This filing may contain updated financial disclosures. AAPL filed 10-K on 2025-10-31. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-08-01. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-05-02. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-01-31. This filing may contain updated financial disclosures.\n\nAAPL filed 10-Q on 2026-01-30. This filing may contain updated financial disclosures. AAPL filed 10-K on 2025-10-31. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-08-01. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-05-02. This filing may contain updated financial disclosures. AAPL filed 10-Q on 2025-01-31. This filing may contain updated financial disclosures.",
+  "grounded": true,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": 1.0,
+  "block_reason": null,
+  "tools_used": [
+    "market",
+    "sec",
+    "social"
+  ],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9305064678192139
+  },
+  "report": "\nFinancial Report:\n\nSentiment: neutral\nConfidence: 0.9305064678192139\n"
+}
+
+================================================================================
+[e4deb32e] Sending Query: Is AAPL a good investment?
+================================================================================
+[e4deb32e] Response Time: 0.102s
+[e4deb32e] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_ADVISORY_QUERY",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[ddb373d4] Sending Query: Is TSLA overvalued?
+================================================================================
+[ddb373d4] Response Time: 0.024s
+[ddb373d4] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_ADVISORY_QUERY",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[d850d56a] Sending Query: Should I buy NVDA next quarter?
+================================================================================
+[d850d56a] Response Time: 0.043s
+[d850d56a] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_ADVISORY_QUERY",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[31d3e8cd] Sending Query: Predict AAPL stock price next quarter.
+================================================================================
+[31d3e8cd] Response Time: 0.036s
+[31d3e8cd] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_ADVISORY_QUERY",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[05fd8ebe] Sending Query: What is the stock price of Banana Quantum Holdings?
+================================================================================
+[05fd8ebe] Response Time: 0.017s
+[05fd8ebe] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_UNKNOWN_ENTITY",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[306e68fa] Sending Query: Provide SEC filing for LunarByte Systems.
+================================================================================
+[306e68fa] Response Time: 0.011s
+[306e68fa] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_UNKNOWN_ENTITY",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[8fd119d2] Sending Query: What is revenue of AlphaOmega Nano Corp?
+================================================================================
+[8fd119d2] Response Time: 0.01s
+[8fd119d2] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_UNKNOWN_ENTITY",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[fd1699e2] Sending Query: Summarize Apple's 2028 10-K filing.
+================================================================================
+[fd1699e2] Response Time: 0.009s
+[fd1699e2] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_UNSUPPORTED_DOCUMENT_YEAR",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[206afd61] Sending Query: Explain Section 14 of Microsoft's 2027 SEC filing.
+================================================================================
+[206afd61] Response Time: 0.016s
+[206afd61] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_UNSUPPORTED_DOCUMENT_YEAR",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[9b9219de] Sending Query: What is Apple's internal AI roadmap?
+================================================================================
+[9b9219de] Response Time: 0.838s
+[9b9219de] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_INVALID_TOOL_OUTPUT",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[2175547c] Sending Query: What is Tesla's undisclosed R&D budget?
+================================================================================
+[2175547c] Response Time: 0.466s
+[2175547c] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_INVALID_TOOL_OUTPUT",
+  "tools_used": [],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[1deb9805] Sending Query: What was AAPL closing price on January 15 2024?
+================================================================================
+[1deb9805] Response Time: 6.535s
+[1deb9805] Status Code: 200
+
+--- Response ---
+{
+  "answer": "AAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38130053\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38132735\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38130639\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38143554\n\nAAPL (2026-03-09) \u2014 Open: $255.6300, High: $261.1500, Low: $253.6805, Close: $259.8800, Volume: 38143554",
+  "grounded": true,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": 1.0,
+  "block_reason": null,
+  "tools_used": [
+    "market",
+    "sec",
+    "social"
+  ],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9307129383087158
+  },
+  "report": "\nFinancial Report:\n\nSentiment: neutral\nConfidence: 0.9307129383087158\n"
+}
+
+    HALLUCINATION PROBE LEAKED — query='What was AAPL closing price on January 15 2024?'
+     tools_used=['market', 'sec', 'social']  sentiment={'label': 'neutral', 'confidence': 0.9307129383087158}
+================================================================================
+[c5c9d2f2] Sending Query: What is the current analyst sentiment for NVDA?
+================================================================================
+[c5c9d2f2] Response Time: 5.278s
+[c5c9d2f2] Status Code: 200
+
+--- Response ---
+{
+  "answer": "INSUFFICIENT_EVIDENCE",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": "BLOCKED_LOW_SIMILARITY",
+  "tools_used": [
+    "market",
+    "sec",
+    "social"
+  ],
+  "sentiment": null,
+  "report": null
+}
+
+================================================================================
+[5e124d31] Sending Query: What was MSFT revenue in FY2023?
+================================================================================
+[5e124d31] Response Time: 8.317s
+[5e124d31] Status Code: 200
+
+--- Response ---
+{
+  "answer": "MSFT (2026-03-09) \u2014 Open: $404.8700, High: $410.2100, Low: $403.5000, Close: $409.4100, Volume: 30069456\n\nMSFT (2026-03-09) \u2014 Open: $404.8700, High: $410.2100, Low: $403.5000, Close: $409.4100, Volume: 30063536\n\nMSFT filed 10-Q on 2026-01-28. This filing may contain updated financial disclosures. MSFT filed 10-Q on 2025-10-29. This filing may contain updated financial disclosures. MSFT filed 10-K on 2025-07-30. This filing may contain updated financial disclosures. MSFT filed 10-Q on 2025-04-30. This filing may contain updated financial disclosures. MSFT filed 10-Q on 2025-01-29. This filing may contain updated financial disclosures.\n\nMSFT filed 10-Q on 2026-01-28. This filing may contain updated financial disclosures. MSFT filed 10-Q on 2025-10-29. This filing may contain updated financial disclosures. MSFT filed 10-K on 2025-07-30. This filing may contain updated financial disclosures. MSFT filed 10-Q on 2025-04-30. This filing may contain updated financial disclosures. MSFT filed 10-Q on 2025-01-29. This filing may contain updated financial disclosures.",
+  "grounded": true,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": 1.0,
+  "block_reason": null,
+  "tools_used": [
+    "market",
+    "sec",
+    "social"
+  ],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9385014772415161
+  },
+  "report": "\nFinancial Report:\n\nSentiment: neutral\nConfidence: 0.9385014772415161\n"
+}
+
+    HALLUCINATION PROBE LEAKED — query='What was MSFT revenue in FY2023?'
+     tools_used=['market', 'sec', 'social']  sentiment={'label': 'neutral', 'confidence': 0.9385014772415161}
+================================================================================
+[58f600ef] Sending Query: The GeoSolutions technology will leverage Benefon's GPS solutions by providing Location Based Search Technology, a Communities Platform, location relevant multimedia content and a new and powerful commercial model.
+================================================================================
+[58f600ef] Response Time: 2.892s
+[58f600ef] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The GeoSolutions technology will leverage Benefon's GPS solutions by providing Location Based Search Technology, a Communities Platform, location relevant multimedia content and a new and powerful commercial model.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.6744758486747742
+  },
+  "report": null
+}
+
+================================================================================
+[243785f9] Sending Query: For the last quarter of 2010, Componenta's net sales doubled to EUR131m from EUR76m for the same period a year earlier, while it moved to a zero pre-tax profit from a pre-tax loss of EUR7m.
+================================================================================
+[243785f9] Response Time: 3.586s
+[243785f9] Status Code: 200
+
+--- Response ---
+{
+  "answer": "For the last quarter of 2010, Componenta's net sales doubled to EUR131m from EUR76m for the same period a year earlier, while it moved to a zero pre-tax profit from a pre-tax loss of EUR7m.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.9481975436210632
+  },
+  "report": null
+}
+
+================================================================================
+[f55cb962] Sending Query: $SPY wouldn't be surprised to see a green close
+================================================================================
+[f55cb962] Response Time: 1.318s
+[f55cb962] Status Code: 200
+
+--- Response ---
+{
+  "answer": "$SPY wouldn't be surprised to see a green close",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8176282048225403
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='positive' got='neutral'  query="$SPY wouldn't be surprised to see a green close"
+================================================================================
+[0ff70c13] Sending Query: Kone's net sales rose by some 14% year-on-year in the first nine months of 2008.
+================================================================================
+[0ff70c13] Response Time: 2.383s
+[0ff70c13] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Kone's net sales rose by some 14% year-on-year in the first nine months of 2008.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.9578078985214233
+  },
+  "report": null
+}
+
+================================================================================
+[bb8bd46d] Sending Query: Circulation revenue has increased by 5% in Finland and 4% in Sweden in 2008.
+================================================================================
+[bb8bd46d] Response Time: 2.314s
+[bb8bd46d] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Circulation revenue has increased by 5% in Finland and 4% in Sweden in 2008.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.9540418982505798
+  },
+  "report": null
+}
+
+================================================================================
+[f9b17b40] Sending Query: The subdivision made sales revenues last year of EUR 480.7 million EUR 414.9 million in 2008, and operating profits of EUR 44.5 million EUR 7.4 million.
+================================================================================
+[f9b17b40] Response Time: 3.395s
+[f9b17b40] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The subdivision made sales revenues last year of EUR 480.7 million EUR 414.9 million in 2008, and operating profits of EUR 44.5 million EUR 7.4 million.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.6386036276817322
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='positive' got='neutral'  query='The subdivision made sales revenues last year of EUR 480.7 m'
+================================================================================
+[b0210e6d] Sending Query: Royal Dutch Shell to Buy BG Group for Nearly $70 Billion
+================================================================================
+[b0210e6d] Response Time: 2.788s
+[b0210e6d] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Royal Dutch Shell to Buy BG Group for Nearly $70 Billion",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8982338905334473
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='positive' got='neutral'  query='Royal Dutch Shell to Buy BG Group for Nearly $70 Billion'
+================================================================================
+[4276a7fd] Sending Query: The item included restructuring costs of EUR1.6m, while a year earlier they were EUR13.1m. Diluted EPS stood at EUR0.3 versus a loss per share of EUR 0.1.
+================================================================================
+[4276a7fd] Response Time: 1.891s
+[4276a7fd] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The item included restructuring costs of EUR1.6m, while a year earlier they were EUR13.1m. Diluted EPS stood at EUR0.3 versus a loss per share of EUR 0.1.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "negative",
+    "confidence": 0.4017767608165741
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='positive' got='negative'  query='The item included restructuring costs of EUR1.6m, while a ye'
+================================================================================
+[7761a1f9] Sending Query: $FB gone green on day
+================================================================================
+[7761a1f9] Response Time: 1.377s
+[7761a1f9] Status Code: 200
+
+--- Response ---
+{
+  "answer": "$FB gone green on day",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.44164687395095825
+  },
+  "report": null
+}
+
+================================================================================
+[76e1facd] Sending Query: $MSFT SQL Server revenue grew double-digit with SQL Server Premium revenue growing over 30% http://stks.co/ir2F
+================================================================================
+[76e1facd] Response Time: 3.035s
+[76e1facd] Status Code: 200
+
+--- Response ---
+{
+  "answer": "$MSFT SQL Server revenue grew double-digit with SQL Server Premium revenue growing over 30% http://stks.co/ir2F",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.9573588371276855
+  },
+  "report": null
+}
+
+================================================================================
+[5982c9c8] Sending Query: Aviva, Friends Life top forecasts ahead of 5.6 billion pound merger
+================================================================================
+[5982c9c8] Response Time: 2.688s
+[5982c9c8] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Aviva, Friends Life top forecasts ahead of 5.6 billion pound merger",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.6157132983207703
+  },
+  "report": null
+}
+
+================================================================================
+[aa00ac9d] Sending Query: Stockmann and Swedish sector company AB Lindex entered into an agreement on September 30, 2007, whereby Stockmann, or a wholly-owned subsidiary of it, will make a public tender offer for all of Lindex's issued shares.
+================================================================================
+[aa00ac9d] Response Time: 3.394s
+[aa00ac9d] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Stockmann and Swedish sector company AB Lindex entered into an agreement on September 30, 2007, whereby Stockmann, or a wholly-owned subsidiary of it, will make a public tender offer for all of Lindex's issued shares.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.8006361722946167
+  },
+  "report": null
+}
+
+================================================================================
+[224a3f81] Sending Query: We are pleased to welcome Tapeks Noma into Cramo group.
+================================================================================
+[224a3f81] Response Time: 2.581s
+[224a3f81] Status Code: 200
+
+--- Response ---
+{
+  "answer": "We are pleased to welcome Tapeks Noma into Cramo group.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.6950153708457947
+  },
+  "report": null
+}
+
+================================================================================
+[8e414391] Sending Query: According to Finnish pension insurance company Varma, Varma was the recipient of over two thirds of the revenue of the earnings-related pension cover that was under competitive tendering in Finland.
+================================================================================
+[8e414391] Response Time: 3.036s
+[8e414391] Status Code: 200
+
+--- Response ---
+{
+  "answer": "According to Finnish pension insurance company Varma, Varma was the recipient of over two thirds of the revenue of the earnings-related pension cover that was under competitive tendering in Finland.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8017077445983887
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='positive' got='neutral'  query='According to Finnish pension insurance company Varma, Varma '
+================================================================================
+[1aac4061] Sending Query: A portion, $12.5 million, will be recorded as part of its winnings in a prior patent dispute with Finnish phone maker Nokia Oyj.
+================================================================================
+[1aac4061] Response Time: 2.899s
+[1aac4061] Status Code: 200
+
+--- Response ---
+{
+  "answer": "A portion, $12.5 million, will be recorded as part of its winnings in a prior patent dispute with Finnish phone maker Nokia Oyj.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8897732496261597
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='positive' got='neutral'  query='A portion, $12.5 million, will be recorded as part of its wi'
+================================================================================
+[f6a5673a] Sending Query: The company also estimates the already carried out investments to lead to an increase in its net sales for 2010 from 2009 when they reached EUR 141.7 million.
+================================================================================
+[f6a5673a] Response Time: 2.907s
+[f6a5673a] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The company also estimates the already carried out investments to lead to an increase in its net sales for 2010 from 2009 when they reached EUR 141.7 million.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.9522870182991028
+  },
+  "report": null
+}
+
+================================================================================
+[38227231] Sending Query: Shire CEO steps up drive to get Baxalta board talking
+================================================================================
+[38227231] Response Time: 2.782s
+[38227231] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Shire CEO steps up drive to get Baxalta board talking",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.7747787833213806
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='positive' got='neutral'  query='Shire CEO steps up drive to get Baxalta board talking'
+================================================================================
+[b4da3599] Sending Query: Costco: A Premier Retail Dividend Play https://t.co/Fa5cnh2t0t $COST
+================================================================================
+[b4da3599] Response Time: 3.506s
+[b4da3599] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Costco: A Premier Retail Dividend Play https://t.co/Fa5cnh2t0t $COST",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8128560185432434
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='positive' got='neutral'  query='Costco: A Premier Retail Dividend Play https://t.co/Fa5cnh2t'
+================================================================================
+[2125731d] Sending Query: $ESI on lows, down $1.50 to $2.50 BK a real possibility
+================================================================================
+[2125731d] Response Time: 2.683s
+[2125731d] Status Code: 200
+
+--- Response ---
+{
+  "answer": "$ESI on lows, down $1.50 to $2.50 BK a real possibility",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "negative",
+    "confidence": 0.9678689241409302
+  },
+  "report": null
+}
+
+================================================================================
+[68790eea] Sending Query: $SAP Q1 disappoints as #software licenses down. Real problem? #Cloud growth trails $MSFT $ORCL $GOOG $CRM $ADBE https://t.co/jNDphllzq5
+================================================================================
+[68790eea] Response Time: 3.514s
+[68790eea] Status Code: 200
+
+--- Response ---
+{
+  "answer": "$SAP Q1 disappoints as #software licenses down. Real problem? #Cloud growth trails $MSFT $ORCL $GOOG $CRM $ADBE https://t.co/jNDphllzq5",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "negative",
+    "confidence": 0.9274588823318481
+  },
+  "report": null
+}
+
+================================================================================
+[c70b8f06] Sending Query: $AAPL afternoon selloff as usual will be brutal. get ready to lose a ton of money.
+================================================================================
+[c70b8f06] Response Time: 2.978s
+[c70b8f06] Status Code: 200
+
+--- Response ---
+{
+  "answer": "$AAPL afternoon selloff as usual will be brutal. get ready to lose a ton of money.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "negative",
+    "confidence": 0.8646239042282104
+  },
+  "report": null
+}
+
+================================================================================
+[8adfdb1f] Sending Query: $TSLA recalling pretty much every single model X @cnnbrk got to short that even at work you jump in money trade
+================================================================================
+[8adfdb1f] Response Time: 3.032s
+[8adfdb1f] Status Code: 200
+
+--- Response ---
+{
+  "answer": "$TSLA recalling pretty much every single model X @cnnbrk got to short that even at work you jump in money trade",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8663780093193054
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='negative' got='neutral'  query='$TSLA recalling pretty much every single model X @cnnbrk got'
+================================================================================
+[39403dc1] Sending Query: Dolce & Gabbana has asked the European Union to declare Marimekko Corporation's 'Unikko' floral pattern trademark invalid, in a continuing dispute between the two companies.
+================================================================================
+[39403dc1] Response Time: 3.28s
+[39403dc1] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Dolce & Gabbana has asked the European Union to declare Marimekko Corporation's 'Unikko' floral pattern trademark invalid, in a continuing dispute between the two companies.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "negative",
+    "confidence": 0.9359859824180603
+  },
+  "report": null
+}
+
+================================================================================
+[d64535ce] Sending Query: InterContinental Hotels first-quarter global room revenue lags estimates
+================================================================================
+[d64535ce] Response Time: 2.464s
+[d64535ce] Status Code: 200
+
+--- Response ---
+{
+  "answer": "InterContinental Hotels first-quarter global room revenue lags estimates",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "negative",
+    "confidence": 0.9669410586357117
+  },
+  "report": null
+}
+
+================================================================================
+[092611a4] Sending Query: L&G still paying price for dividend cut during crisis, chief says
+================================================================================
+[092611a4] Response Time: 3.037s
+[092611a4] Status Code: 200
+
+--- Response ---
+{
+  "answer": "L&G still paying price for dividend cut during crisis, chief says",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.5866418480873108
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='negative' got='positive'  query='L&G still paying price for dividend cut during crisis, chief'
+================================================================================
+[8390df32] Sending Query: Shell's $70 Billion BG Deal Meets Shareholder Skepticism
+================================================================================
+[8390df32] Response Time: 2.795s
+[8390df32] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Shell's $70 Billion BG Deal Meets Shareholder Skepticism",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.6736087203025818
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='negative' got='positive'  query="Shell's $70 Billion BG Deal Meets Shareholder Skepticism"
+================================================================================
+[0cf531dc] Sending Query: SSH COMMUNICATIONS SECURITY CORP STOCK EXCHANGE RELEASE OCTOBER 14, 2008 AT 2:45 PM The Company updates its full year outlook and estimates its results to remain at loss for the full year.
+================================================================================
+[0cf531dc] Response Time: 2.901s
+[0cf531dc] Status Code: 200
+
+--- Response ---
+{
+  "answer": "SSH COMMUNICATIONS SECURITY CORP STOCK EXCHANGE RELEASE OCTOBER 14, 2008 AT 2:45 PM The Company updates its full year outlook and estimates its results to remain at loss for the full year.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "negative",
+    "confidence": 0.9474895000457764
+  },
+  "report": null
+}
+
+================================================================================
+[55376e22] Sending Query: According to the Finnish-Russian Chamber of Commerce, all the major construction companies of Finland are operating in Russia.
+================================================================================
+[55376e22] Response Time: 3.091s
+[55376e22] Status Code: 200
+
+--- Response ---
+{
+  "answer": "According to the Finnish-Russian Chamber of Commerce, all the major construction companies of Finland are operating in Russia.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9479061365127563
+  },
+  "report": null
+}
+
+================================================================================
+[6fadbd12] Sending Query: The Swedish buyout firm has sold its remaining 22.4 percent stake, almost eighteen months after taking the company public in Finland.
+================================================================================
+[6fadbd12] Response Time: 3.192s
+[6fadbd12] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The Swedish buyout firm has sold its remaining 22.4 percent stake, almost eighteen months after taking the company public in Finland.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9370194673538208
+  },
+  "report": null
+}
+
+================================================================================
+[107b37b5] Sending Query: According to L+ñnnen Tehtaat's CEO Matti Karppinen, the company aims to deliver fish products to its customers a day earlier than it currently does.
+================================================================================
+[107b37b5] Response Time: 3.207s
+[107b37b5] Status Code: 200
+
+--- Response ---
+{
+  "answer": "According to L+\u00f1nnen Tehtaat's CEO Matti Karppinen, the company aims to deliver fish products to its customers a day earlier than it currently does.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8371707201004028
+  },
+  "report": null
+}
+
+================================================================================
+[21576cda] Sending Query: The company's share is quoted on NASDAQ OMX Helsinki Rautaruukki Oyj: RTRKS.
+================================================================================
+[21576cda] Response Time: 3.109s
+[21576cda] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The company's share is quoted on NASDAQ OMX Helsinki Rautaruukki Oyj: RTRKS.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9465648531913757
+  },
+  "report": null
+}
+
+================================================================================
+[2c7a85d2] Sending Query: Elcoteq SE is listed on the Nasdaq OMX Helsinki Ltd.
+================================================================================
+[2c7a85d2] Response Time: 2.956s
+[2c7a85d2] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Elcoteq SE is listed on the Nasdaq OMX Helsinki Ltd.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9497707486152649
+  },
+  "report": null
+}
+
+================================================================================
+[5f1ae39a] Sending Query: Two of these contracts are for turntable anode vibrocompactors that will be delivered to Gansu Hualu Aluminum Co Ltd and another unnamed costumer.
+================================================================================
+[5f1ae39a] Response Time: 2.636s
+[5f1ae39a] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Two of these contracts are for turntable anode vibrocompactors that will be delivered to Gansu Hualu Aluminum Co Ltd and another unnamed costumer.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8555628657341003
+  },
+  "report": null
+}
+
+================================================================================
+[937db907] Sending Query: In stead of being based on a soft drink, as is usual, the Teho energy drink is made with fresh water.
+================================================================================
+[937db907] Response Time: 1.692s
+[937db907] Status Code: 200
+
+--- Response ---
+{
+  "answer": "In stead of being based on a soft drink, as is usual, the Teho energy drink is made with fresh water.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9423578977584839
+  },
+  "report": null
+}
+
+================================================================================
+[09efa523] Sending Query: The company plans to increase the unit's specialist staff to several dozen -- depending on the market situation during 2010.
+================================================================================
+[09efa523] Response Time: 2.098s
+[09efa523] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The company plans to increase the unit's specialist staff to several dozen -- depending on the market situation during 2010.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "positive",
+    "confidence": 0.8166983723640442
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='neutral' got='positive'  query="The company plans to increase the unit's specialist staff to"
+================================================================================
+[ec7fd971] Sending Query: The company closed last year with a turnover of about four million euros.
+================================================================================
+[ec7fd971] Response Time: 2.999s
+[ec7fd971] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The company closed last year with a turnover of about four million euros.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9335368275642395
+  },
+  "report": null
+}
+
+================================================================================
+[d8b2cb9a] Sending Query: The five-storey, eco-efficient building will have a gross floor area of about 15,000 sq m. It will also include apartments.
+================================================================================
+[d8b2cb9a] Response Time: 2.906s
+[d8b2cb9a] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The five-storey, eco-efficient building will have a gross floor area of about 15,000 sq m. It will also include apartments.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8677778244018555
+  },
+  "report": null
+}
+
+================================================================================
+[a1492757] Sending Query: The first installment of the Cinema Series concludes with a profile of Finnish inventor Olavi Linden, whose personal artistic journey and work at Fiskars has led to dozens of design awards.
+================================================================================
+[a1492757] Response Time: 2.993s
+[a1492757] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The first installment of the Cinema Series concludes with a profile of Finnish inventor Olavi Linden, whose personal artistic journey and work at Fiskars has led to dozens of design awards.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8381088376045227
+  },
+  "report": null
+}
+
+================================================================================
+[ece6533a] Sending Query: All are welcome.
+================================================================================
+[ece6533a] Response Time: 2.296s
+[ece6533a] Status Code: 200
+
+--- Response ---
+{
+  "answer": "All are welcome.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.7893408536911011
+  },
+  "report": null
+}
+
+================================================================================
+[8663018a] Sending Query: HUHTAMAKI OYJ STOCK EXCHANGE RELEASE, 16.9.2008 AT 13.32 Huhtamaki's Capital Markets Day for institutional investors and analysts is held in Espoo, September 16, 2008 starting at 13.30 pm Finnish time.
+================================================================================
+[8663018a] Response Time: 2.392s
+[8663018a] Status Code: 200
+
+--- Response ---
+{
+  "answer": "HUHTAMAKI OYJ STOCK EXCHANGE RELEASE, 16.9.2008 AT 13.32 Huhtamaki's Capital Markets Day for institutional investors and analysts is held in Espoo, September 16, 2008 starting at 13.30 pm Finnish time.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9483705759048462
+  },
+  "report": null
+}
+
+================================================================================
+[f7e2a0f1] Sending Query: - Profit before taxes was EUR 105.9 82.7 million.
+================================================================================
+[f7e2a0f1] Response Time: 1.321s
+[f7e2a0f1] Status Code: 200
+
+--- Response ---
+{
+  "answer": "- Profit before taxes was EUR 105.9 82.7 million.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9256082773208618
+  },
+  "report": null
+}
+
+================================================================================
+[62233aa0] Sending Query: FinancialWire tm is not a press release service, and receives no compensation for its news, opinions or distributions.
+================================================================================
+[62233aa0] Response Time: 2.97s
+[62233aa0] Status Code: 200
+
+--- Response ---
+{
+  "answer": "FinancialWire tm is not a press release service, and receives no compensation for its news, opinions or distributions.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9329522848129272
+  },
+  "report": null
+}
+
+================================================================================
+[fd834dfc] Sending Query: ASSA ABLOY Kaupthing Bank gave a 'neutral' recommendation and a share price target of 174 crowns $24.7 - 19 euro on Swedish lock maker Assa Abloy AB.
+================================================================================
+[fd834dfc] Response Time: 3.324s
+[fd834dfc] Status Code: 200
+
+--- Response ---
+{
+  "answer": "ASSA ABLOY Kaupthing Bank gave a 'neutral' recommendation and a share price target of 174 crowns $24.7 - 19 euro on Swedish lock maker Assa Abloy AB.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.7766536474227905
+  },
+  "report": null
+}
+
+================================================================================
+[5364c4a8] Sending Query: In 2005 the bank posted a net profit of Lt 8.2 mn.
+================================================================================
+[5364c4a8] Response Time: 3.468s
+[5364c4a8] Status Code: 200
+
+--- Response ---
+{
+  "answer": "In 2005 the bank posted a net profit of Lt 8.2 mn.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9256404042243958
+  },
+  "report": null
+}
+
+================================================================================
+[91f78e9f] Sending Query: The volume of investments in the two phases of the project is estimated at USD 300mn (EUR 215.03 mn).
+================================================================================
+[91f78e9f] Response Time: 2.697s
+[91f78e9f] Status Code: 200
+
+--- Response ---
+{
+  "answer": "The volume of investments in the two phases of the project is estimated at USD 300mn (EUR 215.03 mn).",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.8812382221221924
+  },
+  "report": null
+}
+
+================================================================================
+[9258b8fe] Sending Query: Russia accounted for 9% of the Lagardere magazine division's revenue, or EUR 114.40 mn (USD 148.11 mn) in 2009, the USA - for 18%.
+================================================================================
+[9258b8fe] Response Time: 3.225s
+[9258b8fe] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Russia accounted for 9% of the Lagardere magazine division's revenue, or EUR 114.40 mn (USD 148.11 mn) in 2009, the USA - for 18%.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9196590185165405
+  },
+  "report": null
+}
+
+================================================================================
+[4fe5eed6] Sending Query: Viking Line has canceled some services.
+================================================================================
+[4fe5eed6] Response Time: 2.697s
+[4fe5eed6] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Viking Line has canceled some services.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "negative",
+    "confidence": 0.9622148275375366
+  },
+  "report": null
+}
+
+  ✗ SENTIMENT MISMATCH — expected='neutral' got='negative'  query='Viking Line has canceled some services.'
+================================================================================
+[c4a503c9] Sending Query: Ahlstrom Corporation STOCK EXCHANGE ANNOUNCEMENT 7.2.2007 at 10.30 A total of 56,955 new shares of Ahlstrom Corporation have been subscribed with option rights under the company's stock option programs I 2001 and II 2001.
+================================================================================
+[c4a503c9] Response Time: 3.502s
+[c4a503c9] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Ahlstrom Corporation STOCK EXCHANGE ANNOUNCEMENT 7.2.2007 at 10.30 A total of 56,955 new shares of Ahlstrom Corporation have been subscribed with option rights under the company's stock option programs I 2001 and II 2001.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9333990216255188
+  },
+  "report": null
+}
+
+================================================================================
+[122e23c6] Sending Query: Stockmann department store will have a total floor space of over 8,000 square metres and Stockmann's investment in the project will have a price tag of about EUR 12 million.
+================================================================================
+[122e23c6] Response Time: 3.309s
+[122e23c6] Status Code: 200
+
+--- Response ---
+{
+  "answer": "Stockmann department store will have a total floor space of over 8,000 square metres and Stockmann's investment in the project will have a price tag of about EUR 12 million.",
+  "grounded": false,
+  "hallucination_rate": 0.0,
+  "faithfulness_score": null,
+  "block_reason": null,
+  "tools_used": [],
+  "sentiment": {
+    "label": "neutral",
+    "confidence": 0.9248709082603455
+  },
+  "report": null
+}
+
+
+================================================================================
+ TEST SUMMARY
+================================================================================
+Total Queries: 66
+Hallucination Probes Run: 3
+Hallucination Probes Leaked (grounded but wrong): 2
+Grounded Responses: 5
+Blocked Responses: 12
+Hallucinated Responses (>0 rate): 0
+
+Grounded Rate: 7.58%
+Blocked Rate: 18.18%
+
+── Sentiment Classification (labeled dataset: 49 queries) ──
+  Positive samples : 18
+  Negative samples : 9
+  Neutral  samples : 22
+  Blocked (no sentiment returned) : 0
+  Scored (reached sentiment step) : 49
+  Correct  : 36
+  Wrong    : 13
+  Accuracy : 73.47%  (of scored queries only)
+  ⚠ Sentiment classification is moderate (60–79%) — review neutral handling.
+
+ System Evaluation:
+✓ No hallucination detected.
+ 2 hallucination probe(s) leaked through as grounded — pipeline vulnerable.
+   Check: stale ChromaDB docs, social sentinel bypass, cross-ticker contamination.
+ Blocking may be too weak.
+================================================================================
+
+Done.
+
