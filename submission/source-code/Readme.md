@@ -127,12 +127,10 @@ Four microservices run as independent Kubernetes pods:
 ├── test_service.py                      # Integration tests — 17 pipeline queries, 6 categories
 ├── test_service-sentiment.py            # FinBERT labeled dataset evaluation (49 samples)
 ├── test_service_page.py                 # Generates test_01_*.png – test_06_*.png charts
-├── test_service.py.old                  # Previous version (kept for reference)
 │
 ├── # ── Benchmark scripts ────────────────────────────────────────────
 ├── benchmark.py                         # BASELINE vs OPTIMIZED comparison (36 runs)
 ├── benchmark_page.py                    # Generates benchmark_01_*.png – benchmark_06_*.png
-├── benchmark.py.old                     # Previous version (kept for reference)
 │
 ├── # ── Generated charts ─────────────────────────────────────────────
 ├── benchmark_01_hallucination_rate.png
@@ -157,7 +155,6 @@ Four microservices run as independent Kubernetes pods:
 ├── report-mar8.txt                      # March 8 evaluation report (historical)
 ├── deploy-report.txt                    # Deployment run log
 ├── test_report_sentiments.txt           # Sentiment test run output
-├── main.py.old                          # Previous main.py (kept for reference)
 │
 └── Readme.md                            # This file
 ```
